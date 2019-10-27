@@ -154,6 +154,14 @@ function positionIsHorizontal(position) {
 	return position === 'top' || position === 'bottom';
 }
 
+function compare2Level(l1, l2) {
+	return function(a, b) {
+		return a[l1] === b[l1]
+			? a[l2] - b[l2]
+			: a[l1] - b[l1];
+	};
+}
+
 var Chart = function(item, config) {
 	this.construct(item, config);
 	return this;
@@ -239,9 +247,6 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 			me.resize(true);
 		}
 
-		// Make sure scales have IDs and are built before we build any controllers.
-		me.ensureScalesHaveIDs();
-		me.buildOrUpdateScales();
 		me.initToolTip();
 
 		// After init plugin notification
@@ -412,19 +417,24 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	buildOrUpdateControllers: function() {
 		var me = this;
 		var newControllers = [];
+		var datasets = me.data.datasets;
+		var i, ilen;
 
-		helpers.each(me.data.datasets, function(dataset, datasetIndex) {
-			var meta = me.getDatasetMeta(datasetIndex);
+		for (i = 0, ilen = datasets.length; i < ilen; i++) {
+			var dataset = datasets[i];
+			var meta = me.getDatasetMeta(i);
 			var type = dataset.type || me.config.type;
 
 			if (meta.type && meta.type !== type) {
-				me.destroyDatasetMeta(datasetIndex);
-				meta = me.getDatasetMeta(datasetIndex);
+				me.destroyDatasetMeta(i);
+				meta = me.getDatasetMeta(i);
 			}
 			meta.type = type;
+			meta.order = dataset.order || 0;
+			meta.index = i;
 
 			if (meta.controller) {
-				meta.controller.updateIndex(datasetIndex);
+				meta.controller.updateIndex(i);
 				meta.controller.linkScales();
 			} else {
 				var ControllerClass = controllers[meta.type];
@@ -432,10 +442,10 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 					throw new Error('"' + meta.type + '" is not a chart type.');
 				}
 
-				meta.controller = new ControllerClass(me, datasetIndex);
+				meta.controller = new ControllerClass(me, i);
 				newControllers.push(meta.controller);
 			}
-		}, me);
+		}
 
 		return newControllers;
 	},
@@ -461,6 +471,7 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 
 	update: function(config) {
 		var me = this;
+		var i, ilen;
 
 		if (!config || typeof config !== 'object') {
 			// backwards compatibility
@@ -487,9 +498,9 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		var newControllers = me.buildOrUpdateControllers();
 
 		// Make sure all dataset controllers have correct meta data counts
-		helpers.each(me.data.datasets, function(dataset, datasetIndex) {
-			me.getDatasetMeta(datasetIndex).controller.buildOrUpdateElements();
-		}, me);
+		for (i = 0, ilen = me.data.datasets.length; i < ilen; i++) {
+			me.getDatasetMeta(i).controller.buildOrUpdateElements();
+		}
 
 		me.updateLayout();
 
@@ -513,11 +524,7 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		// Do this before render so that any plugins that need final scale updates can use it
 		plugins.notify(me, 'afterUpdate');
 
-		me._layers.sort(function(a, b) {
-			return a.z === b.z
-				? a._idx - b._idx
-				: a.z - b.z;
-		});
+		me._layers.sort(compare2Level('z', '_idx'));
 
 		if (me._bufferedRender) {
 			me._bufferedRequest = {
@@ -718,22 +725,48 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	},
 
 	/**
+	 * @private
+	 */
+	_getSortedDatasetMetas: function(filterVisible) {
+		var me = this;
+		var datasets = me.data.datasets || [];
+		var result = [];
+		var i, ilen;
+
+		for (i = 0, ilen = datasets.length; i < ilen; ++i) {
+			if (!filterVisible || me.isDatasetVisible(i)) {
+				result.push(me.getDatasetMeta(i));
+			}
+		}
+
+		result.sort(compare2Level('order', 'index'));
+
+		return result;
+	},
+
+	/**
+	 * @private
+	 */
+	_getSortedVisibleDatasetMetas: function() {
+		return this._getSortedDatasetMetas(true);
+	},
+
+	/**
 	 * Draws all datasets unless a plugin returns `false` to the `beforeDatasetsDraw`
 	 * hook, in which case, plugins will not be called on `afterDatasetsDraw`.
 	 * @private
 	 */
 	drawDatasets: function(easingValue) {
 		var me = this;
+		var metasets, i;
 
 		if (plugins.notify(me, 'beforeDatasetsDraw', [easingValue]) === false) {
 			return;
 		}
 
-		// Draw datasets reversed to support proper line stacking
-		for (var i = (me.data.datasets || []).length - 1; i >= 0; --i) {
-			if (me.isDatasetVisible(i)) {
-				me.drawDataset(i, easingValue);
-			}
+		metasets = me._getSortedVisibleDatasetMetas();
+		for (i = metasets.length - 1; i >= 0; --i) {
+			me.drawDataset(metasets[i], easingValue);
 		}
 
 		plugins.notify(me, 'afterDatasetsDraw', [easingValue]);
@@ -744,12 +777,11 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	 * hook, in which case, plugins will not be called on `afterDatasetDraw`.
 	 * @private
 	 */
-	drawDataset: function(index, easingValue) {
+	drawDataset: function(meta, easingValue) {
 		var me = this;
-		var meta = me.getDatasetMeta(index);
 		var args = {
 			meta: meta,
-			index: index,
+			index: meta.index,
 			easingValue: easingValue
 		};
 
@@ -829,7 +861,9 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 				controller: null,
 				hidden: null,			// See isDatasetVisible() comment
 				xAxisID: null,
-				yAxisID: null
+				yAxisID: null,
+				order: dataset.order || 0,
+				index: datasetIndex
 			};
 		}
 
@@ -955,14 +989,18 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	},
 
 	updateHoverStyle: function(elements, mode, enabled) {
-		var method = enabled ? 'setHoverStyle' : 'removeHoverStyle';
+		var prefix = enabled ? 'set' : 'remove';
 		var element, i, ilen;
 
 		for (i = 0, ilen = elements.length; i < ilen; ++i) {
 			element = elements[i];
 			if (element) {
-				this.getDatasetMeta(element._datasetIndex).controller[method](element);
+				this.getDatasetMeta(element._datasetIndex).controller[prefix + 'HoverStyle'](element);
 			}
+		}
+
+		if (mode === 'dataset') {
+			this.getDatasetMeta(elements[0]._datasetIndex).controller['_' + prefix + 'DatasetHoverStyle']();
 		}
 	},
 
