@@ -339,7 +339,7 @@ module.exports = {
 			// If the canvas is in a shadow DOM, then the styles must also be inserted
 			// into the same shadow DOM.
 			// https://github.com/chartjs/Chart.js/issues/5763
-			var root = canvas.getRootNode();
+			var root = canvas.getRootNode ? canvas.getRootNode() : document;
 			var targetNode = root.host ? root : document.head;
 			injectCSS(targetNode, stylesheet);
 		}
@@ -446,27 +446,3 @@ module.exports = {
 		removeListener(canvas, type, proxy);
 	}
 };
-
-// DEPRECATIONS
-
-/**
- * Provided for backward compatibility, use EventTarget.addEventListener instead.
- * EventTarget.addEventListener compatibility: Chrome, Opera 7, Safari, FF1.5+, IE9+
- * @see https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
- * @function Chart.helpers.addEvent
- * @deprecated since version 2.7.0
- * @todo remove at version 3
- * @private
- */
-helpers.addEvent = addListener;
-
-/**
- * Provided for backward compatibility, use EventTarget.removeEventListener instead.
- * EventTarget.removeEventListener compatibility: Chrome, Opera 7, Safari, FF1.5+, IE9+
- * @see https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
- * @function Chart.helpers.removeEvent
- * @deprecated since version 2.7.0
- * @todo remove at version 3
- * @private
- */
-helpers.removeEvent = removeListener;

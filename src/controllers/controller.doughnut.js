@@ -18,9 +18,6 @@ defaults._set('doughnut', {
 		// Boolean - Whether we animate scaling the Doughnut from the centre
 		animateScale: false
 	},
-	hover: {
-		mode: 'single'
-	},
 	legendCallback: function(chart) {
 		var list = document.createElement('ul');
 		var data = chart.data;
@@ -190,7 +187,7 @@ module.exports = DatasetController.extend({
 		}
 
 		for (i = 0, ilen = arcs.length; i < ilen; ++i) {
-			arcs[i]._options = me._resolveDataElementOptions(arcs[i], i);
+			arcs[i]._options = me._resolveDataElementOptions(i);
 		}
 
 		chart.borderWidth = me.getMaxBorderWidth();
@@ -323,7 +320,7 @@ module.exports = DatasetController.extend({
 			arc = arcs[i];
 			if (controller) {
 				controller._configure();
-				options = controller._resolveDataElementOptions(arc, i);
+				options = controller._resolveDataElementOptions(i);
 			} else {
 				options = arc._options;
 			}

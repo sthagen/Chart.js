@@ -49,8 +49,6 @@ defaults._set('global', {
 					var item = tooltipItems[0];
 					if (item.label) {
 						title = item.label;
-					} else if (item.xLabel) {
-						title = item.xLabel;
 					} else if (labelCount > 0 && item.index < labelCount) {
 						title = labels[item.index];
 					}
@@ -73,15 +71,13 @@ defaults._set('global', {
 				}
 				if (!helpers.isNullOrUndef(tooltipItem.value)) {
 					label += tooltipItem.value;
-				} else {
-					label += tooltipItem.yLabel;
 				}
 				return label;
 			},
 			labelColor: function(tooltipItem, chart) {
 				var meta = chart.getDatasetMeta(tooltipItem.datasetIndex);
 				var activeElement = meta.data[tooltipItem.index];
-				var view = activeElement._view;
+				var view = activeElement.$previousStyle || activeElement._view;
 				return {
 					borderColor: view.borderColor,
 					backgroundColor: view.backgroundColor
@@ -208,18 +204,14 @@ function splitNewlines(str) {
  * @param element - the chart element (point, arc, bar) to create the tooltip item for
  * @return new tooltip item
  */
-function createTooltipItem(element) {
-	var xScale = element._xScale;
-	var yScale = element._yScale || element._scale; // handle radar || polarArea charts
-	var index = element._index;
+function createTooltipItem(chart, element) {
 	var datasetIndex = element._datasetIndex;
-	var controller = element._chart.getDatasetMeta(datasetIndex).controller;
+	var index = element._index;
+	var controller = chart.getDatasetMeta(datasetIndex).controller;
 	var indexScale = controller._getIndexScale();
 	var valueScale = controller._getValueScale();
 
 	return {
-		xLabel: xScale ? xScale.getLabelForIndex(index, datasetIndex) : '',
-		yLabel: yScale ? yScale.getLabelForIndex(index, datasetIndex) : '',
 		label: indexScale ? '' + indexScale.getLabelForIndex(index, datasetIndex) : '',
 		value: valueScale ? '' + valueScale.getLabelForIndex(index, datasetIndex) : '',
 		index: index,
@@ -359,7 +351,7 @@ function getTooltipSize(tooltip, model) {
 function determineAlignment(tooltip, size) {
 	var model = tooltip._model;
 	var chart = tooltip._chart;
-	var chartArea = tooltip._chart.chartArea;
+	var chartArea = chart.chartArea;
 	var xAlign = 'center';
 	var yAlign = 'center';
 
@@ -497,8 +489,25 @@ function getBeforeAfterBodyLines(callback) {
 
 var exports = Element.extend({
 	initialize: function() {
-		this._model = getBaseModel(this._options);
-		this._lastActive = [];
+		var me = this;
+		me._model = getBaseModel(me._options);
+		me._view = {};
+		me._lastActive = [];
+	},
+
+	transition: function(easingValue) {
+		var me = this;
+		var options = me._options;
+
+		if (me._lastEvent && me._chart.animating) {
+			// Let's react to changes during animation
+			me._active = me._chart.getElementsAtEventForMode(me._lastEvent, options.mode, options);
+			me.update(true);
+			me.pivot();
+			me._lastActive = me.active;
+		}
+
+		Element.prototype.transition.call(me, easingValue);
 	},
 
 	// Get the title
@@ -612,7 +621,7 @@ var exports = Element.extend({
 
 			var tooltipItems = [];
 			for (i = 0, len = active.length; i < len; ++i) {
-				tooltipItems.push(createTooltipItem(active[i]));
+				tooltipItems.push(createTooltipItem(me._chart, active[i]));
 			}
 
 			// If the user provided a filter function, use it to modify the tooltip items
@@ -993,8 +1002,12 @@ var exports = Element.extend({
 		// Find Active Elements for tooltips
 		if (e.type === 'mouseout') {
 			me._active = [];
+			me._lastEvent = null;
 		} else {
 			me._active = me._chart.getElementsAtEventForMode(e, options.mode, options);
+			if (e.type !== 'click') {
+				me._lastEvent = e.type === 'click' ? null : e;
+			}
 			if (options.reverse) {
 				me._active.reverse();
 			}

@@ -14,7 +14,7 @@ defaults._set('line', {
 	spanGaps: false,
 
 	hover: {
-		mode: 'label'
+		mode: 'index'
 	},
 
 	scales: {
@@ -88,12 +88,11 @@ module.exports = DatasetController.extend({
 			}
 
 			// Utility
-			line._scale = me._yScale;
 			line._datasetIndex = me.index;
 			// Data
 			line._children = points;
 			// Model
-			line._model = me._resolveDatasetElementOptions(line);
+			line._model = me._resolveDatasetElementOptions();
 
 			line.pivot();
 		}
@@ -116,23 +115,18 @@ module.exports = DatasetController.extend({
 	updateElement: function(point, index, reset) {
 		var me = this;
 		var meta = me.getMeta();
-		var custom = point.custom || {};
 		var dataset = me.getDataset();
 		var datasetIndex = me.index;
 		var value = dataset.data[index];
-		var xScale = me._xScale;
-		var yScale = me._yScale;
 		var lineModel = meta.dataset._model;
 		var x, y;
 
-		var options = me._resolveDataElementOptions(point, index);
+		var options = me._resolveDataElementOptions(index);
 
-		x = xScale.getPixelForValue(typeof value === 'object' ? value : NaN, index, datasetIndex);
-		y = reset ? yScale.getBasePixel() : me.calculatePointY(value, index, datasetIndex);
+		x = me._xScale.getPixelForValue(typeof value === 'object' ? value : NaN, index, datasetIndex);
+		y = reset ? me._yScale.getBasePixel() : me.calculatePointY(value, index, datasetIndex);
 
 		// Utility
-		point._xScale = xScale;
-		point._yScale = yScale;
 		point._options = options;
 		point._datasetIndex = datasetIndex;
 		point._index = index;
@@ -141,7 +135,7 @@ module.exports = DatasetController.extend({
 		point._model = {
 			x: x,
 			y: y,
-			skip: custom.skip || isNaN(x) || isNaN(y),
+			skip: isNaN(x) || isNaN(y),
 			// Appearance
 			radius: options.radius,
 			pointStyle: options.pointStyle,
@@ -149,7 +143,7 @@ module.exports = DatasetController.extend({
 			backgroundColor: options.backgroundColor,
 			borderColor: options.borderColor,
 			borderWidth: options.borderWidth,
-			tension: valueOrDefault(custom.tension, lineModel ? lineModel.tension : 0),
+			tension: lineModel ? lineModel.tension : 0,
 			steppedLine: lineModel ? lineModel.steppedLine : false,
 			// Tooltip
 			hitRadius: options.hitRadius
@@ -159,10 +153,9 @@ module.exports = DatasetController.extend({
 	/**
 	 * @private
 	 */
-	_resolveDatasetElementOptions: function(element) {
+	_resolveDatasetElementOptions: function() {
 		var me = this;
 		var config = me._config;
-		var custom = element.custom || {};
 		var options = me.chart.options;
 		var lineOptions = options.elements.line;
 		var values = DatasetController.prototype._resolveDatasetElementOptions.apply(me, arguments);
@@ -172,7 +165,7 @@ module.exports = DatasetController.extend({
 		// This option gives lines the ability to span gaps
 		values.spanGaps = valueOrDefault(config.spanGaps, options.spanGaps);
 		values.tension = valueOrDefault(config.lineTension, lineOptions.tension);
-		values.steppedLine = resolve([custom.steppedLine, config.steppedLine, lineOptions.stepped]);
+		values.steppedLine = resolve([config.steppedLine, lineOptions.stepped]);
 
 		return values;
 	},
@@ -209,8 +202,9 @@ module.exports = DatasetController.extend({
 			if (rightValue < 0) {
 				return yScale.getPixelForValue(sumNeg + rightValue);
 			}
+			return yScale.getPixelForValue(sumPos + rightValue);
 		}
-		return yScale.getPixelForValue(sumPos + rightValue);
+		return yScale.getPixelForValue(value);
 	},
 
 	updateBezierControlPoints: function() {

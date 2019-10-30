@@ -15,8 +15,8 @@ describe('Core.Tooltip', function() {
 			var tooltipItem = {
 				index: 1,
 				datasetIndex: 0,
-				xLabel: 'Point 2',
-				yLabel: '20'
+				label: 'Point 2',
+				value: '20'
 			};
 
 			var label = Chart.defaults.global.tooltips.callbacks.label(tooltipItem, data);
@@ -257,7 +257,8 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'single'
+					mode: 'nearest',
+					intersect: true
 				}
 			}
 		});
@@ -366,7 +367,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label',
+					mode: 'index',
 					callbacks: {
 						beforeTitle: function() {
 							return 'beforeTitle';
@@ -519,7 +520,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label',
+					mode: 'index',
 					itemSort: function(a, b) {
 						return a.datasetIndex > b.datasetIndex ? -1 : 1;
 					}
@@ -600,7 +601,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label',
+					mode: 'index',
 					reverse: true
 				}
 			}
@@ -681,7 +682,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label'
+					mode: 'index'
 				}
 			}
 		});
@@ -760,7 +761,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label',
+					mode: 'index',
 					filter: function(tooltipItem, data) {
 						// For testing purposes remove the first dataset that has a tooltipHidden property
 						return !data.datasets[tooltipItem.datasetIndex].tooltipHidden;
@@ -885,7 +886,8 @@ describe('Core.Tooltip', function() {
 				},
 				options: {
 					tooltips: {
-						mode: 'single'
+						mode: 'nearest',
+						intersect: true
 					}
 				}
 			});
@@ -907,12 +909,6 @@ describe('Core.Tooltip', function() {
 
 			expect(tooltipItem.index).toBe(pointIndex);
 			expect(tooltipItem.datasetIndex).toBe(datasetIndex);
-			var indexLabel = type !== 'horizontalBar' ? 'xLabel' : 'yLabel';
-			expect(typeof tooltipItem[indexLabel]).toBe('string');
-			expect(tooltipItem[indexLabel]).toBe(chart.data.labels[pointIndex]);
-			var valueLabel = type !== 'horizontalBar' ? 'yLabel' : 'xLabel';
-			expect(typeof tooltipItem[valueLabel]).toBe('number');
-			expect(tooltipItem[valueLabel]).toBe(chart.data.datasets[datasetIndex].data[pointIndex]);
 			expect(typeof tooltipItem.label).toBe('string');
 			expect(tooltipItem.label).toBe(chart.data.labels[pointIndex]);
 			expect(typeof tooltipItem.value).toBe('string');
@@ -941,7 +937,8 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'single',
+					mode: 'nearest',
+					intersect: true,
 					callbacks: {
 						title: function() {
 							return 'registering callback...';
@@ -955,7 +952,7 @@ describe('Core.Tooltip', function() {
 		var meta = chart.getDatasetMeta(0);
 		var firstPoint = meta.data[1];
 
-		var node = chart.chart.canvas;
+		var node = chart.canvas;
 		var rect = node.getBoundingClientRect();
 
 		var firstEvent = new MouseEvent('mousemove', {
@@ -1129,7 +1126,7 @@ describe('Core.Tooltip', function() {
 			},
 			options: {
 				tooltips: {
-					mode: 'label',
+					mode: 'index',
 					callbacks: {
 						beforeTitle: function() {
 							return 'beforeTitle\nnewline';

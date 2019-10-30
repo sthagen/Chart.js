@@ -192,17 +192,6 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		me._bufferedRender = false;
 		me._layers = [];
 
-		/**
-		 * Provided for backward compatibility, Chart and Chart.Controller have been merged,
-		 * the "instance" still need to be defined since it might be called from plugins.
-		 * @prop Chart#chart
-		 * @deprecated since version 2.6.0
-		 * @todo remove at version 3
-		 * @private
-		 */
-		me.chart = me;
-		me.controller = me; // chart.chart.controller #inception
-
 		// Add the chart instance to the global namespace
 		Chart.instances[me.id] = me;
 
@@ -393,8 +382,6 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 				scales[scale.id] = scale;
 			}
 
-			scale.mergeTicksOptions();
-
 			// TODO(SB): I think we should be able to remove this custom case (options.scale)
 			// and consider it as a regular scale part of the "scales"" map only! This would
 			// make the logic easier and remove some useless? custom code.
@@ -517,8 +504,7 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		// after update.
 		me.tooltip.initialize();
 
-		// Last active contains items that were previously in the tooltip.
-		// When we reset the tooltip, we need to clear it
+		// Last active contains items that were previously hovered.
 		me.lastActive = [];
 
 		// Do this before render so that any plugins that need final scale updates can use it
@@ -534,6 +520,11 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 			};
 		} else {
 			me.render(config);
+		}
+
+		// Replay last event from before update
+		if (me._lastEvent) {
+			me.eventHandler(me._lastEvent);
 		}
 	},
 
@@ -565,14 +556,6 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 			item._idx = index;
 		});
 
-		/**
-		 * Provided for backward compatibility, use `afterLayout` instead.
-		 * @method IPlugin#afterScaleUpdate
-		 * @deprecated since version 2.5.0
-		 * @todo remove at version 3
-		 * @private
-		 */
-		plugins.notify(me, 'afterScaleUpdate');
 		plugins.notify(me, 'afterLayout');
 	},
 
@@ -714,14 +697,20 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	 */
 	transition: function(easingValue) {
 		var me = this;
+		var i, ilen;
 
-		for (var i = 0, ilen = (me.data.datasets || []).length; i < ilen; ++i) {
+		for (i = 0, ilen = (me.data.datasets || []).length; i < ilen; ++i) {
 			if (me.isDatasetVisible(i)) {
 				me.getDatasetMeta(i).controller.transition(easingValue);
 			}
 		}
 
 		me.tooltip.transition(easingValue);
+
+		if (me._lastEvent && me.animating) {
+			// If, during animation, element under mouse changes, let's react to that.
+			me.handleEvent(me._lastEvent);
+		}
 	},
 
 	/**
@@ -821,15 +810,15 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 	 * @return An object containing the dataset index and element index of the matching element. Also contains the rectangle that was draw
 	 */
 	getElementAtEvent: function(e) {
-		return Interaction.modes.single(this, e);
+		return Interaction.modes.nearest(this, e, {intersect: true});
 	},
 
 	getElementsAtEvent: function(e) {
-		return Interaction.modes.label(this, e, {intersect: true});
+		return Interaction.modes.index(this, e, {intersect: true});
 	},
 
 	getElementsAtXAxis: function(e) {
-		return Interaction.modes['x-axis'](this, e, {intersect: true});
+		return Interaction.modes.index(this, e, {intersect: false});
 	},
 
 	getElementsAtEventForMode: function(e, mode, options) {
@@ -939,7 +928,6 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		var me = this;
 		me.tooltip = new Tooltip({
 			_chart: me,
-			_chartInstance: me, // deprecated, backward compatibility
 			_data: me.data,
 			_options: me.options.tooltips
 		}, me);
@@ -1001,6 +989,25 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 
 		if (mode === 'dataset') {
 			this.getDatasetMeta(elements[0]._datasetIndex).controller['_' + prefix + 'DatasetHoverStyle']();
+		}
+	},
+
+	/**
+	 * @private
+	 */
+	_updateHoverStyles: function() {
+		var me = this;
+		var options = me.options || {};
+		var hoverOptions = options.hover;
+
+		// Remove styling for last active (even if it may still be active)
+		if (me.lastActive.length) {
+			me.updateHoverStyle(me.lastActive, hoverOptions.mode, false);
+		}
+
+		// Built-in hover styling
+		if (me.active.length && hoverOptions.mode) {
+			me.updateHoverStyle(me.active, hoverOptions.mode, true);
 		}
 	},
 
@@ -1071,8 +1078,10 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		// Find Active Elements for hover and tooltips
 		if (e.type === 'mouseout') {
 			me.active = [];
+			me._lastEvent = null;
 		} else {
 			me.active = me.getElementsAtEventForMode(e, hoverOptions.mode, hoverOptions);
+			me._lastEvent = e.type === 'click' ? null : e;
 		}
 
 		// Invoke onHover hook
@@ -1080,22 +1089,13 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 		helpers.callback(options.onHover || options.hover.onHover, [e.native, me.active], me);
 
 		if (e.type === 'mouseup' || e.type === 'click') {
-			if (options.onClick) {
+			if (options.onClick && helpers.canvas._isPointInArea(e, me.chartArea)) {
 				// Use e.native here for backwards compatibility
 				options.onClick.call(me, e.native, me.active);
 			}
 		}
 
-		// Remove styling for last active (even if it may still be active)
-		if (me.lastActive.length) {
-			me.updateHoverStyle(me.lastActive, hoverOptions.mode, false);
-		}
-
-		// Built in hover styling
-		if (me.active.length && hoverOptions.mode) {
-			me.updateHoverStyle(me.active, hoverOptions.mode, true);
-		}
-
+		me._updateHoverStyles();
 		changed = !helpers.arrayEquals(me.active, me.lastActive);
 
 		// Remember Last Actives
@@ -1113,41 +1113,3 @@ helpers.extend(Chart.prototype, /** @lends Chart */ {
 Chart.instances = {};
 
 module.exports = Chart;
-
-// DEPRECATIONS
-
-/**
- * Provided for backward compatibility, use Chart instead.
- * @class Chart.Controller
- * @deprecated since version 2.6
- * @todo remove at version 3
- * @private
- */
-Chart.Controller = Chart;
-
-/**
- * Provided for backward compatibility, not available anymore.
- * @namespace Chart
- * @deprecated since version 2.8
- * @todo remove at version 3
- * @private
- */
-Chart.types = {};
-
-/**
- * Provided for backward compatibility, not available anymore.
- * @namespace Chart.helpers.configMerge
- * @deprecated since version 2.8.0
- * @todo remove at version 3
- * @private
- */
-helpers.configMerge = mergeConfig;
-
-/**
- * Provided for backward compatibility, not available anymore.
- * @namespace Chart.helpers.scaleMerge
- * @deprecated since version 2.8.0
- * @todo remove at version 3
- * @private
- */
-helpers.scaleMerge = mergeScaleConfig;

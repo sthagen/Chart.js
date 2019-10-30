@@ -28,9 +28,9 @@ describe('Time scale tests', function() {
 		jasmine.addMatchers({
 			toBeCloseToTime: function() {
 				return {
-					compare: function(actual, expected) {
+					compare: function(time, expected) {
 						var result = false;
-
+						var actual = moment(time);
 						var diff = actual.diff(expected.value, expected.unit, true);
 						result = Math.abs(diff) < (expected.threshold !== undefined ? expected.threshold : 0.01);
 
@@ -102,7 +102,6 @@ describe('Time scale tests', function() {
 				unit: false,
 				round: false,
 				isoWeekday: false,
-				displayFormat: false,
 				minUnit: 'millisecond',
 				displayFormats: {}
 			}
@@ -1521,7 +1520,7 @@ describe('Time scale tests', function() {
 			});
 
 			it ('should reverse the values for pixels', function() {
-				var scale = this.chart.chart.scales.x;
+				var scale = this.chart.scales.x;
 				expect(scale.getValueForPixel(scale.left)).toBeCloseToTime({
 					value: moment('2042-01-01T00:00:00'),
 					unit: 'hour',
