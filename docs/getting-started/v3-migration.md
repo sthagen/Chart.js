@@ -29,6 +29,7 @@ Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`.
 
 ### Options
 
+* The dataset option `tension` was renamed to `lineTension`
 * `scales.[x/y]Axes.barPercentage` was moved to dataset option `barPercentage`
 * `scales.[x/y]Axes.barThickness` was moved to dataset option `barThickness`
 * `scales.[x/y]Axes.categoryPercentage` was moved to dataset option `categoryPercentage`
@@ -52,13 +53,23 @@ Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`.
 * `helpers.numberOfLabelLines`
 * `helpers.removeEvent`
 * `helpers.scaleMerge`
-* `scale.mergeTicksOptions`
-* `scale.ticksAsNumbers`
+* `Scale.getRightValue`
+* `Scale.mergeTicksOptions`
+* `Scale.ticksAsNumbers`
 * `Chart.Controller`
 * `Chart.chart.chart`
 * `Chart.types`
+* `Line.calculatePointY`
+* `Element.getArea`
+* `Element.height`
+* `Element.inLabelRange`
 * Made `scale.handleDirectionalChanges` private
 * Made `scale.tickValues` private
+
+#### Removal of private APIs
+
+* `_model.datasetLabel`
+* `_model.label`
 
 ### Renamed
 
@@ -74,13 +85,18 @@ Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`.
 
 ### Changed
 
-#### Ticks
+#### Scales
+
+* `scale.getLabelForIndex` was replaced by `scale.getLabelForValue`
+* `scale.getPixelForValue` now has only one parameter
+
+##### Ticks
 
 * `scale.ticks` now contains objects instead of strings
 * `buildTicks` is now expected to return tick objects
 * `afterBuildTicks` now has no parameters like the other callbacks
 * `convertTicksToLabels` was renamed to `generateTickLabels`. It is now expected to set the label property on the ticks given as input
 
-#### Time Scale
+##### Time Scale
 
 * `getValueForPixel` now returns milliseconds since the epoch

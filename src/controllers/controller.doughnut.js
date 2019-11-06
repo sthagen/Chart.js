@@ -134,6 +134,19 @@ module.exports = DatasetController.extend({
 		'hoverBorderWidth',
 	],
 
+	/**
+	 * Override data parsing, since we are not using scales
+	 * @private
+	 */
+	_parse: function(start, count) {
+		var data = this.getDataset().data;
+		var metaData = this.getMeta().data;
+		var i, ilen;
+		for (i = start, ilen = start + count; i < ilen; ++i) {
+			metaData[i]._val = +data[i];
+		}
+	},
+
 	// Get index of the dataset in relation to the visible datasets. This allows determining the inner and outer radius correctly
 	getRingIndex: function(datasetIndex) {
 		var ringIndex = 0;
@@ -219,8 +232,7 @@ module.exports = DatasetController.extend({
 		var centerY = (chartArea.top + chartArea.bottom) / 2;
 		var startAngle = opts.rotation; // non reset case handled later
 		var endAngle = opts.rotation; // non reset case handled later
-		var dataset = me.getDataset();
-		var circumference = reset && animationOpts.animateRotate ? 0 : arc.hidden ? 0 : me.calculateCircumference(dataset.data[index]) * (opts.circumference / DOUBLE_PI);
+		var circumference = reset && animationOpts.animateRotate ? 0 : arc.hidden ? 0 : me.calculateCircumference(arc._val * opts.circumference / DOUBLE_PI);
 		var innerRadius = reset && animationOpts.animateScale ? 0 : me.innerRadius;
 		var outerRadius = reset && animationOpts.animateScale ? 0 : me.outerRadius;
 		var options = arc._options || {};
@@ -242,8 +254,7 @@ module.exports = DatasetController.extend({
 				endAngle: endAngle,
 				circumference: circumference,
 				outerRadius: outerRadius,
-				innerRadius: innerRadius,
-				label: helpers.valueAtIndexOrDefault(dataset.label, index, chart.data.labels[index])
+				innerRadius: innerRadius
 			}
 		});
 
@@ -264,14 +275,13 @@ module.exports = DatasetController.extend({
 	},
 
 	calculateTotal: function() {
-		var dataset = this.getDataset();
-		var meta = this.getMeta();
+		var metaData = this.getMeta().data;
 		var total = 0;
 		var value;
 
-		helpers.each(meta.data, function(element, index) {
-			value = dataset.data[index];
-			if (!isNaN(value) && !element.hidden) {
+		helpers.each(metaData, function(arc) {
+			value = arc ? arc._val : NaN;
+			if (!isNaN(value) && !arc.hidden) {
 				total += Math.abs(value);
 			}
 		});
