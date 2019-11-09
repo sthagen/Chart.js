@@ -1,14 +1,14 @@
 'use strict';
 
-var defaults = require('./core.defaults');
-var Element = require('./core.element');
-var helpers = require('../helpers/index');
-var Ticks = require('./core.ticks');
+const defaults = require('./core.defaults');
+const Element = require('./core.element');
+const helpers = require('../helpers/index');
+const Ticks = require('./core.ticks');
 
-var isArray = helpers.isArray;
-var isNullOrUndef = helpers.isNullOrUndef;
-var valueOrDefault = helpers.valueOrDefault;
-var valueAtIndexOrDefault = helpers.valueAtIndexOrDefault;
+const isArray = helpers.isArray;
+const isNullOrUndef = helpers.isNullOrUndef;
+const valueOrDefault = helpers.valueOrDefault;
+const valueAtIndexOrDefault = helpers.valueAtIndexOrDefault;
 
 defaults._set('scale', {
 	display: true,
@@ -24,10 +24,6 @@ defaults._set('scale', {
 		drawOnChartArea: true,
 		drawTicks: true,
 		tickMarkLength: 10,
-		zeroLineWidth: 1,
-		zeroLineColor: 'rgba(0,0,0,0.25)',
-		zeroLineBorderDash: [],
-		zeroLineBorderDashOffset: 0.0,
 		offsetGridLines: false,
 		borderDash: [],
 		borderDashOffset: 0.0
@@ -323,9 +319,7 @@ function skip(ticks, spacing, majorStart, majorEnd) {
 	}
 }
 
-var Scale = Element.extend({
-
-	zeroLineIndex: 0,
+class Scale extends Element {
 
 	/**
 	 * Parse a supported input value to internal representation.
@@ -334,9 +328,9 @@ var Scale = Element.extend({
 	 * @private
 	 * @since 3.0
 	 */
-	_parse: function(raw, index) { // eslint-disable-line no-unused-vars
+	_parse(raw, index) { // eslint-disable-line no-unused-vars
 		return raw;
-	},
+	}
 
 	/**
 	 * Parse an object for axis to internal representation.
@@ -346,14 +340,14 @@ var Scale = Element.extend({
 	 * @private
 	 * @since 3.0
 	 */
-	_parseObject: function(obj, axis, index) {
+	_parseObject(obj, axis, index) {
 		if (obj[axis] !== undefined) {
 			return this._parse(obj[axis], index);
 		}
 		return null;
-	},
+	}
 
-	_getMinMax: function(canStack) {
+	_getMinMax(canStack) {
 		var me = this;
 		var metas = me._getMatchingVisibleMetas();
 		var min = Number.POSITIVE_INFINITY;
@@ -373,9 +367,9 @@ var Scale = Element.extend({
 			max: max,
 			minPositive: minPositive
 		};
-	},
+	}
 
-	_invalidateCaches: helpers.noop,
+	_invalidateCaches() {}
 
 	/**
 	 * Get the padding needed for the scale
@@ -383,7 +377,7 @@ var Scale = Element.extend({
 	 * @private
 	 * @returns {Padding} the necessary padding
 	 */
-	getPadding: function() {
+	getPadding() {
 		var me = this;
 		return {
 			left: me.paddingLeft || 0,
@@ -391,31 +385,31 @@ var Scale = Element.extend({
 			right: me.paddingRight || 0,
 			bottom: me.paddingBottom || 0
 		};
-	},
+	}
 
 	/**
 	 * Returns the scale tick objects ({label, major})
 	 * @since 2.7
 	 */
-	getTicks: function() {
+	getTicks() {
 		return this.ticks;
-	},
+	}
 
 	/**
 	* @private
 	*/
-	_getLabels: function() {
+	_getLabels() {
 		var data = this.chart.data;
-		return this.options.labels || (this.isHorizontal() ? data.xLabels : data.yLabels) || data.labels;
-	},
+		return this.options.labels || (this.isHorizontal() ? data.xLabels : data.yLabels) || data.labels || [];
+	}
 
 	// These methods are ordered by lifecyle. Utilities then follow.
 	// Any function defined here is inherited by all scale types.
 	// Any function can be extended by the scale type
 
-	beforeUpdate: function() {
+	beforeUpdate() {
 		helpers.callback(this.options.beforeUpdate, [this]);
-	},
+	}
 
 	/**
 	 * @param {number} maxWidth - the max width in pixels
@@ -425,7 +419,7 @@ var Scale = Element.extend({
 	 *     - padding - space that's required to show the labels at the edges of the scale
 	 *     - thickness of scales or legends in another orientation
 	 */
-	update: function(maxWidth, maxHeight, margins) {
+	update(maxWidth, maxHeight, margins) {
 		var me = this;
 		var tickOpts = me.options.ticks;
 		var sampleSize = tickOpts.sampleSize;
@@ -504,12 +498,12 @@ var Scale = Element.extend({
 		// TODO(v3): remove minSize as a public property and return value from all layout boxes. It is unused
 		// make maxWidth and maxHeight private
 		return me.minSize;
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_configure: function() {
+	_configure() {
 		var me = this;
 		var reversePixels = me.options.ticks.reverse;
 		var startPixel, endPixel;
@@ -527,18 +521,18 @@ var Scale = Element.extend({
 		me._endPixel = endPixel;
 		me._reversePixels = reversePixels;
 		me._length = endPixel - startPixel;
-	},
+	}
 
-	afterUpdate: function() {
+	afterUpdate() {
 		helpers.callback(this.options.afterUpdate, [this]);
-	},
+	}
 
 	//
 
-	beforeSetDimensions: function() {
+	beforeSetDimensions() {
 		helpers.callback(this.options.beforeSetDimensions, [this]);
-	},
-	setDimensions: function() {
+	}
+	setDimensions() {
 		var me = this;
 		// Set the unconstrained dimension before label rotation
 		if (me.isHorizontal()) {
@@ -559,36 +553,36 @@ var Scale = Element.extend({
 		me.paddingTop = 0;
 		me.paddingRight = 0;
 		me.paddingBottom = 0;
-	},
-	afterSetDimensions: function() {
+	}
+	afterSetDimensions() {
 		helpers.callback(this.options.afterSetDimensions, [this]);
-	},
+	}
 
 	// Data limits
-	beforeDataLimits: function() {
+	beforeDataLimits() {
 		helpers.callback(this.options.beforeDataLimits, [this]);
-	},
-	determineDataLimits: helpers.noop,
-	afterDataLimits: function() {
+	}
+	determineDataLimits() {}
+	afterDataLimits() {
 		helpers.callback(this.options.afterDataLimits, [this]);
-	},
+	}
 
 	//
-	beforeBuildTicks: function() {
+	beforeBuildTicks() {
 		helpers.callback(this.options.beforeBuildTicks, [this]);
-	},
-	buildTicks: helpers.noop,
-	afterBuildTicks: function() {
+	}
+	buildTicks() {}
+	afterBuildTicks() {
 		helpers.callback(this.options.afterBuildTicks, [this]);
-	},
+	}
 
-	beforeTickToLabelConversion: function() {
+	beforeTickToLabelConversion() {
 		helpers.callback(this.options.beforeTickToLabelConversion, [this]);
-	},
+	}
 	/**
 	 * Convert ticks to label strings
 	 */
-	generateTickLabels: function(ticks) {
+	generateTickLabels(ticks) {
 		var me = this;
 		var tickOpts = me.options.ticks;
 		var i, ilen, tick;
@@ -596,17 +590,17 @@ var Scale = Element.extend({
 			tick = ticks[i];
 			tick.label = helpers.callback(tickOpts.callback, [tick.value, i, ticks], me);
 		}
-	},
-	afterTickToLabelConversion: function() {
+	}
+	afterTickToLabelConversion() {
 		helpers.callback(this.options.afterTickToLabelConversion, [this]);
-	},
+	}
 
 	//
 
-	beforeCalculateTickRotation: function() {
+	beforeCalculateTickRotation() {
 		helpers.callback(this.options.beforeCalculateTickRotation, [this]);
-	},
-	calculateTickRotation: function() {
+	}
+	calculateTickRotation() {
 		var me = this;
 		var options = me.options;
 		var tickOpts = options.ticks;
@@ -644,17 +638,17 @@ var Scale = Element.extend({
 		}
 
 		me.labelRotation = labelRotation;
-	},
-	afterCalculateTickRotation: function() {
+	}
+	afterCalculateTickRotation() {
 		helpers.callback(this.options.afterCalculateTickRotation, [this]);
-	},
+	}
 
 	//
 
-	beforeFit: function() {
+	beforeFit() {
 		helpers.callback(this.options.beforeFit, [this]);
-	},
-	fit: function() {
+	}
+	fit() {
 		var me = this;
 		// Reset
 		var minSize = me.minSize = {
@@ -755,13 +749,13 @@ var Scale = Element.extend({
 			me.width = minSize.width;
 			me.height = me._length = chart.height - me.margins.top - me.margins.bottom;
 		}
-	},
+	}
 
 	/**
 	 * Handle margins and padding interactions
 	 * @private
 	 */
-	handleMargins: function() {
+	handleMargins() {
 		var me = this;
 		if (me.margins) {
 			me.margins.left = Math.max(me.paddingLeft, me.margins.left);
@@ -769,22 +763,22 @@ var Scale = Element.extend({
 			me.margins.right = Math.max(me.paddingRight, me.margins.right);
 			me.margins.bottom = Math.max(me.paddingBottom, me.margins.bottom);
 		}
-	},
+	}
 
-	afterFit: function() {
+	afterFit() {
 		helpers.callback(this.options.afterFit, [this]);
-	},
+	}
 
 	// Shared Methods
-	isHorizontal: function() {
+	isHorizontal() {
 		var pos = this.options.position;
 		return pos === 'top' || pos === 'bottom';
-	},
-	isFullWidth: function() {
+	}
+	isFullWidth() {
 		return this.options.fullWidth;
-	},
+	}
 
-	_convertTicksToLabels: function(ticks) {
+	_convertTicksToLabels(ticks) {
 		var me = this;
 
 		me.beforeTickToLabelConversion();
@@ -792,12 +786,12 @@ var Scale = Element.extend({
 		me.generateTickLabels(ticks);
 
 		me.afterTickToLabelConversion();
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_getLabelSizes: function() {
+	_getLabelSizes() {
 		var me = this;
 		var labelSizes = me._labelSizes;
 
@@ -807,15 +801,15 @@ var Scale = Element.extend({
 		}
 
 		return labelSizes;
-	},
+	}
 
 	/**
 	 * Used to get the label to display in the tooltip for the given value
 	 * @param value
 	 */
-	getLabelForValue: function(value) {
+	getLabelForValue(value) {
 		return value;
-	},
+	}
 
 	/**
 	 * Returns the location of the given data point. Value can either be an index or a numerical value
@@ -824,20 +818,20 @@ var Scale = Element.extend({
 	 * @param index
 	 * @param datasetIndex
 	 */
-	getPixelForValue: helpers.noop,
+	getPixelForValue() {}
 
 	/**
 	 * Used to get the data value from a given pixel. This is the inverse of getPixelForValue
 	 * The coordinate (0, 0) is at the upper-left corner of the canvas
 	 * @param pixel
 	 */
-	getValueForPixel: helpers.noop,
+	getValueForPixel() {}
 
 	/**
 	 * Returns the location of the tick at the given index
 	 * The coordinate (0, 0) is at the upper-left corner of the canvas
 	 */
-	getPixelForTick: function(index) {
+	getPixelForTick(index) {
 		var me = this;
 		var offset = me.options.offset;
 		var numTicks = me.ticks.length;
@@ -846,13 +840,13 @@ var Scale = Element.extend({
 		return index < 0 || index > numTicks - 1
 			? null
 			: me.getPixelForDecimal(index * tickWidth + (offset ? tickWidth / 2 : 0));
-	},
+	}
 
 	/**
 	 * Utility for getting the pixel location of a percentage of scale
 	 * The coordinate (0, 0) is at the upper-left corner of the canvas
 	 */
-	getPixelForDecimal: function(decimal) {
+	getPixelForDecimal(decimal) {
 		var me = this;
 
 		if (me._reversePixels) {
@@ -860,22 +854,22 @@ var Scale = Element.extend({
 		}
 
 		return me._startPixel + decimal * me._length;
-	},
+	}
 
-	getDecimalForPixel: function(pixel) {
+	getDecimalForPixel(pixel) {
 		var decimal = (pixel - this._startPixel) / this._length;
 		return this._reversePixels ? 1 - decimal : decimal;
-	},
+	}
 
 	/**
 	 * Returns the pixel for the minimum chart value
 	 * The coordinate (0, 0) is at the upper-left corner of the canvas
 	 */
-	getBasePixel: function() {
+	getBasePixel() {
 		return this.getPixelForValue(this.getBaseValue());
-	},
+	}
 
-	getBaseValue: function() {
+	getBaseValue() {
 		var me = this;
 		var min = me.min;
 		var max = me.max;
@@ -884,13 +878,13 @@ var Scale = Element.extend({
 			min < 0 && max < 0 ? max :
 			min > 0 && max > 0 ? min :
 			0;
-	},
+	}
 
 	/**
 	 * Returns a subset of ticks to be plotted to avoid overlapping labels.
 	 * @private
 	 */
-	_autoSkip: function(ticks) {
+	_autoSkip(ticks) {
 		var me = this;
 		var tickOpts = me.options.ticks;
 		var axisLength = me._length;
@@ -920,12 +914,12 @@ var Scale = Element.extend({
 		}
 		skip(ticks, spacing);
 		return nonSkipped(ticks);
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_tickSize: function() {
+	_tickSize() {
 		var me = this;
 		var optionTicks = me.options.ticks;
 
@@ -943,12 +937,12 @@ var Scale = Element.extend({
 		return me.isHorizontal()
 			? h * cos > w * sin ? w / cos : h / sin
 			: h * sin < w * cos ? h / cos : w / sin;
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_isVisible: function() {
+	_isVisible() {
 		var display = this.options.display;
 
 		if (display !== 'auto') {
@@ -956,12 +950,12 @@ var Scale = Element.extend({
 		}
 
 		return this._getMatchingVisibleMetas().length > 0;
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_computeGridLineItems: function(chartArea) {
+	_computeGridLineItems(chartArea) {
 		var me = this;
 		var chart = me.chart;
 		var options = me.options;
@@ -981,7 +975,7 @@ var Scale = Element.extend({
 			return alignPixel(chart, pixel, axisWidth);
 		};
 		var borderValue, i, tick, lineValue, alignedLineValue;
-		var tx1, ty1, tx2, ty2, x1, y1, x2, y2, lineWidth, lineColor, borderDash, borderDashOffset;
+		var tx1, ty1, tx2, ty2, x1, y1, x2, y2;
 
 		if (position === 'top') {
 			borderValue = alignBorderValue(me.bottom);
@@ -1012,23 +1006,10 @@ var Scale = Element.extend({
 		for (i = 0; i < ticksLength; ++i) {
 			tick = ticks[i] || {};
 
-			// autoskipper skipped this tick (#4635)
-			if (isNullOrUndef(tick.label) && i < ticks.length) {
-				continue;
-			}
-
-			if (i === me.zeroLineIndex && options.offset === offsetGridLines) {
-				// Draw the first index specially
-				lineWidth = gridLines.zeroLineWidth;
-				lineColor = gridLines.zeroLineColor;
-				borderDash = gridLines.zeroLineBorderDash || [];
-				borderDashOffset = gridLines.zeroLineBorderDashOffset || 0.0;
-			} else {
-				lineWidth = valueAtIndexOrDefault(gridLines.lineWidth, i, 1);
-				lineColor = valueAtIndexOrDefault(gridLines.color, i, 'rgba(0,0,0,0.1)');
-				borderDash = gridLines.borderDash || [];
-				borderDashOffset = gridLines.borderDashOffset || 0.0;
-			}
+			const lineWidth = valueAtIndexOrDefault(gridLines.lineWidth, i, 1);
+			const lineColor = valueAtIndexOrDefault(gridLines.color, i, 'rgba(0,0,0,0.1)');
+			const borderDash = gridLines.borderDash || [];
+			const borderDashOffset = gridLines.borderDashOffset || 0.0;
 
 			lineValue = getPixelForGridLine(me, tick._index || i, offsetGridLines);
 
@@ -1065,12 +1046,12 @@ var Scale = Element.extend({
 		items.borderValue = borderValue;
 
 		return items;
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_computeLabelItems: function() {
+	_computeLabelItems() {
 		var me = this;
 		var options = me.options;
 		var optionTicks = options.ticks;
@@ -1103,11 +1084,6 @@ var Scale = Element.extend({
 			tick = ticks[i];
 			label = tick.label;
 
-			// autoskipper skipped this tick (#4635)
-			if (isNullOrUndef(label)) {
-				continue;
-			}
-
 			pixel = me.getPixelForTick(tick._index || i) + optionTicks.labelOffset;
 			font = tick.major ? fonts.major : fonts.minor;
 			lineHeight = font.lineHeight;
@@ -1135,12 +1111,12 @@ var Scale = Element.extend({
 		}
 
 		return items;
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_drawGrid: function(chartArea) {
+	_drawGrid(chartArea) {
 		var me = this;
 		var gridLines = me.options.gridLines;
 
@@ -1210,12 +1186,12 @@ var Scale = Element.extend({
 			ctx.lineTo(x2, y2);
 			ctx.stroke();
 		}
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_drawLabels: function() {
+	_drawLabels() {
 		var me = this;
 		var optionTicks = me.options.ticks;
 
@@ -1253,12 +1229,12 @@ var Scale = Element.extend({
 			}
 			ctx.restore();
 		}
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_drawTitle: function() {
+	_drawTitle() {
 		var me = this;
 		var ctx = me.ctx;
 		var options = me.options;
@@ -1325,9 +1301,9 @@ var Scale = Element.extend({
 		ctx.font = scaleLabelFont.string;
 		ctx.fillText(scaleLabel.labelString, 0, 0);
 		ctx.restore();
-	},
+	}
 
-	draw: function(chartArea) {
+	draw(chartArea) {
 		var me = this;
 
 		if (!me._isVisible()) {
@@ -1337,12 +1313,12 @@ var Scale = Element.extend({
 		me._drawGrid(chartArea);
 		me._drawTitle();
 		me._drawLabels();
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_layers: function() {
+	_layers() {
 		var me = this;
 		var opts = me.options;
 		var tz = opts.ticks && opts.ticks.z || 0;
@@ -1370,21 +1346,21 @@ var Scale = Element.extend({
 				me._drawLabels.apply(me, arguments);
 			}
 		}];
-	},
+	}
 
 	/**
 	 * @private
 	 */
-	_getAxisID: function() {
+	_getAxisID() {
 		return this.isHorizontal() ? 'xAxisID' : 'yAxisID';
-	},
+	}
 
 	/**
 	 * Returns visible dataset metas that are attached to this scale
 	 * @param {string} [type] - if specified, also filter by dataset type
 	 * @private
 	 */
-	_getMatchingVisibleMetas: function(type) {
+	_getMatchingVisibleMetas(type) {
 		var me = this;
 		var metas = me.chart._getSortedVisibleDatasetMetas();
 		var axisID = me._getAxisID();
@@ -1399,7 +1375,7 @@ var Scale = Element.extend({
 		}
 		return result;
 	}
-});
+}
 
 Scale.prototype._draw = Scale.prototype.draw;
 
