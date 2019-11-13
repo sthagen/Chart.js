@@ -146,7 +146,7 @@ function applyStack(stack, value, dsIndex, allOther) {
 			break;
 		}
 		otherValue = stack.values[datasetIndex];
-		if (!isNaN(otherValue) && (value === 0 || Math.sign(value) === Math.sign(otherValue))) {
+		if (!isNaN(otherValue) && (value === 0 || helpers.sign(value) === helpers.sign(otherValue))) {
 			value += otherValue;
 		}
 	}
@@ -185,6 +185,13 @@ function getFirstScaleId(chart, axis) {
 	return (scalesOpts && scalesOpts[prop] && scalesOpts[prop].length && scalesOpts[prop][0].id) || scaleId;
 }
 
+function getUserBounds(scale) {
+	var {min, max, minDefined, maxDefined} = scale._getUserBounds();
+	return {
+		min: minDefined ? min : Number.NEGATIVE_INFINITY,
+		max: maxDefined ? max : Number.POSITIVE_INFINITY
+	};
+}
 // Base class for all dataset controllers (line, bar, etc)
 var DatasetController = function(chart, datasetIndex) {
 	this.initialize(chart, datasetIndex);
@@ -298,6 +305,15 @@ helpers.extend(DatasetController.prototype, {
 		return this.getScaleForId(this._getIndexScaleId());
 	},
 
+	/**
+	 * @private
+	 */
+	_getOtherScale: function(scale) {
+		return scale.id === this._getIndexScaleId()
+			? this._getValueScale()
+			: this._getIndexScale();
+	},
+
 	reset: function() {
 		this._update(true);
 	},
@@ -315,18 +331,15 @@ helpers.extend(DatasetController.prototype, {
 		var me = this;
 		var type = me.datasetElementType;
 		return type && new type({
-			_ctx: me.chart.ctx,
-			_datasetIndex: me.index
+			_ctx: me.chart.ctx
 		});
 	},
 
-	createMetaData: function(index) {
+	createMetaData: function() {
 		var me = this;
 		var type = me.dataElementType;
 		return type && new type({
 			_ctx: me.chart.ctx,
-			_datasetIndex: me.index,
-			_index: index,
 			_parsed: {}
 		});
 	},
@@ -398,14 +411,14 @@ helpers.extend(DatasetController.prototype, {
 		data = me._data;
 
 		for (i = 0, ilen = data.length; i < ilen; ++i) {
-			metaData[i] = metaData[i] || me.createMetaData(i);
+			metaData[i] = metaData[i] || me.createMetaData();
 		}
 
 		meta.dataset = meta.dataset || me.createMetaDataset();
 	},
 
 	addElementAndReset: function(index) {
-		var element = this.createMetaData(index);
+		var element = this.createMetaData();
 		this._cachedMeta.data.splice(index, 0, element);
 		this.updateElement(element, index, true);
 	},
@@ -615,7 +628,9 @@ helpers.extend(DatasetController.prototype, {
 		var max = Number.NEGATIVE_INFINITY;
 		var stacked = canStack && meta._stacked;
 		var indices = getSortedDatasetIndices(chart, true);
-		var i, item, value, parsed, stack, min, minPositive;
+		var otherScale = this._getOtherScale(scale);
+		var {min: otherMin, max: otherMax} = getUserBounds(otherScale);
+		var i, item, value, parsed, stack, min, minPositive, otherValue;
 
 		min = minPositive = Number.POSITIVE_INFINITY;
 
@@ -623,7 +638,9 @@ helpers.extend(DatasetController.prototype, {
 			item = metaData[i];
 			parsed = item._parsed;
 			value = parsed[scale.id];
-			if (item.hidden || isNaN(value)) {
+			otherValue = parsed[otherScale.id];
+			if (item.hidden || isNaN(value) ||
+				otherMin > otherValue || otherMax < otherValue) {
 				continue;
 			}
 			if (stacked) {
