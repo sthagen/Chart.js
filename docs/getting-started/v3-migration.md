@@ -91,6 +91,10 @@ Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`.
 * `TimeScale.tickFormatFunction` was renamed to `TimeScale._tickFormatFunction`
 * `TimeScale.getPixelForOffset` was renamed to `TimeScale._getPixelForOffset`
 
+#### Renamed private APIs
+
+* `helpers._alignPixel` was renamed to `helpers.canvas._alignPixel`
+
 ### Changed
 
 #### Scales
@@ -100,6 +104,7 @@ Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`.
 
 ##### Ticks
 
+* When `autoSkip` is enabled, `scale.ticks` now contains only the non-skipped ticks instead of all ticks.
 * `scale.ticks` now contains objects instead of strings
 * `buildTicks` is now expected to return tick objects
 * `afterBuildTicks` now has no parameters like the other callbacks
