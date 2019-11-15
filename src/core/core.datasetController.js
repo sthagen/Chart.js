@@ -50,10 +50,10 @@ function listenArrayEvents(array, listener) {
 
 
 function scaleClip(scale, allowedOverflow) {
-	var tickOpts = scale && scale.options.ticks || {};
-	var reverse = tickOpts.reverse;
-	var min = tickOpts.min === undefined ? allowedOverflow : 0;
-	var max = tickOpts.max === undefined ? allowedOverflow : 0;
+	var opts = scale && scale.options || {};
+	var reverse = opts.reverse;
+	var min = opts.min === undefined ? allowedOverflow : 0;
+	var max = opts.max === undefined ? allowedOverflow : 0;
 	return {
 		start: reverse ? max : min,
 		end: reverse ? min : max
@@ -717,6 +717,23 @@ helpers.extend(DatasetController.prototype, {
 		return false;
 	},
 
+	/**
+	 * @private
+	 */
+	_getLabelAndValue: function(index) {
+		const me = this;
+		const indexScale = me._getIndexScale();
+		const valueScale = me._getValueScale();
+		const parsed = me._getParsed(index);
+		return {
+			label: indexScale ? '' + indexScale.getLabelForValue(parsed[indexScale.id]) : '',
+			value: valueScale ? '' + valueScale.getLabelForValue(parsed[valueScale.id]) : ''
+		};
+	},
+
+	/**
+	 * @private
+	 */
 	_update: function(reset) {
 		var me = this;
 		me._configure();
