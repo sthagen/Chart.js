@@ -52,11 +52,11 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 
 ### Removed
 
-* `afterScaleUpdate`
 * `helpers.addEvent`
 * `helpers.aliasPixel`
 * `helpers.configMerge`
 * `helpers.indexOf`
+* `helpers.lineTo`
 * `helpers.min`
 * `helpers.max`
 * `helpers.nextItem`
@@ -65,23 +65,29 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * `helpers.removeEvent`
 * `helpers.roundedRect`
 * `helpers.scaleMerge`
-* `Scale.getRightValue`
-* `Scale.mergeTicksOptions`
-* `Scale.ticksAsNumbers`
 * `Chart.Controller`
 * `Chart.chart.chart`
 * `Chart.types`
-* `Line.calculatePointY`
+* `DatasetController.addElementAndReset`
 * `Element.getArea`
 * `Element.height`
 * `Element.inLabelRange`
-* Made `scale.handleDirectionalChanges` private
-* Made `scale.tickValues` private
+* `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
+* `Line.calculatePointY`
+* `Scale.getRightValue`
+* `Scale.mergeTicksOptions`
+* `Scale.ticksAsNumbers`
+* `Scale.handleDirectionalChanges` is now private
+* `Scale.tickValues` is now private
 
 #### Removal of private APIs
 
-* `_model.datasetLabel`
-* `_model.label`
+* `Element._ctx`
+* `Element._model.datasetLabel`
+* `Element._model.label`
+* `Point._model.tension`
+* `Point._model.steppedLine`
+* `TimeScale._getPixelForOffset`
 * `TimeScale.getLabelWidth`
 
 ### Renamed
@@ -95,6 +101,8 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * `helpers.log10` was renamed to `helpers.math.log10`
 * `Chart.Animation.animationObject` was renamed to `Chart.Animation`
 * `Chart.Animation.chartInstance` was renamed to `Chart.Animation.chart`
+* `DatasetController.createMetaData` and `DatasetController.createMetaDataset` were replaced with `DatasetController.createElement`
+* `DatasetController.updateElement` was renamed to `DatasetController.updateElements`
 * `TimeScale.getLabelCapacity` was renamed to `TimeScale._getLabelCapacity`
 * `TimeScale.tickFormatFunction` was renamed to `TimeScale._tickFormatFunction`
 * `TimeScale.getPixelForOffset` was renamed to `TimeScale._getPixelForOffset`
@@ -107,16 +115,16 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 
 #### Scales
 
-* `scale.getLabelForIndex` was replaced by `scale.getLabelForValue`
-* `scale.getPixelForValue` now has only one parameter
+* `Scale.getLabelForIndex` was replaced by `scale.getLabelForValue`
+* `Scale.getPixelForValue` now has only one parameter. For the `TimeScale` that parameter must be millis since the epoch
 
 ##### Ticks
 
-* When `autoSkip` is enabled, `scale.ticks` now contains only the non-skipped ticks instead of all ticks.
-* `scale.ticks` now contains objects instead of strings
-* `buildTicks` is now expected to return tick objects
-* `afterBuildTicks` now has no parameters like the other callbacks
-* `convertTicksToLabels` was renamed to `generateTickLabels`. It is now expected to set the label property on the ticks given as input
+* When the `autoSkip` option is enabled, `Scale.ticks` now contains only the non-skipped ticks instead of all ticks.
+* `Scale.ticks` now contains objects instead of strings
+* `Scale.buildTicks` is now expected to return tick objects
+* `Scale.afterBuildTicks` now has no parameters like the other callbacks
+* `Scale.convertTicksToLabels` was renamed to `generateTickLabels`. It is now expected to set the label property on the ticks given as input
 
 ##### Time Scale
 
