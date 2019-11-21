@@ -71,6 +71,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * `DatasetController.addElementAndReset`
 * `Element.getArea`
 * `Element.height`
+* `Element.initialize`
 * `Element.inLabelRange`
 * `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
 * `Line.calculatePointY`
@@ -82,6 +83,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 
 #### Removal of private APIs
 
+* `Chart.data.datasets[datasetIndex]._meta`
 * `Element._ctx`
 * `Element._model.datasetLabel`
 * `Element._model.label`
