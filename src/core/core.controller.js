@@ -13,25 +13,6 @@ import Tooltip from './core.tooltip';
 
 const valueOrDefault = helpers.valueOrDefault;
 
-defaults._set('global', {
-	elements: {},
-	events: [
-		'mousemove',
-		'mouseout',
-		'click',
-		'touchstart',
-		'touchmove'
-	],
-	hover: {
-		onHover: null,
-		mode: 'nearest',
-		intersect: true
-	},
-	onClick: null,
-	maintainAspectRatio: true,
-	responsive: true
-});
-
 function mergeScaleConfig(config, options) {
 	options = options || {};
 	const chartDefaults = defaults[config.type] || {scales: {}};
@@ -103,7 +84,7 @@ function initConfig(config) {
 	const scaleConfig = mergeScaleConfig(config, config.options);
 
 	config.options = mergeConfig(
-		defaults.global,
+		defaults,
 		defaults[config.type],
 		config.options || {});
 
@@ -126,7 +107,7 @@ function updateConfig(chart) {
 	const scaleConfig = mergeScaleConfig(chart.config, newOptions);
 
 	newOptions = mergeConfig(
-		defaults.global,
+		defaults,
 		defaults[chart.config.type],
 		newOptions);
 
@@ -809,7 +790,8 @@ class Chart {
 				order: dataset.order || 0,
 				index: datasetIndex,
 				_dataset: dataset,
-				_parsed: []
+				_parsed: [],
+				_sorted: false
 			};
 		}
 
@@ -826,10 +808,6 @@ class Chart {
 		// meta.hidden is a per chart dataset hidden flag override with 3 states: if true or false,
 		// the dataset.hidden value is ignored, else if null, the dataset hidden state is returned.
 		return typeof meta.hidden === 'boolean' ? !meta.hidden : !this.data.datasets[datasetIndex].hidden;
-	}
-
-	generateLegend() {
-		return this.options.legendCallback(this);
 	}
 
 	/**

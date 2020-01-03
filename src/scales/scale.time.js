@@ -138,7 +138,7 @@ function lookup(table, key, value) {
 
 	while (lo >= 0 && lo <= hi) {
 		mid = (lo + hi) >> 1;
-		i0 = table[mid - 1] || null;
+		i0 = mid > 0 && table[mid - 1] || null;
 		i1 = table[mid];
 
 		if (!i0) {
@@ -735,7 +735,7 @@ class TimeScale extends Scale {
 		const angle = toRadians(me.isHorizontal() ? ticksOpts.maxRotation : ticksOpts.minRotation);
 		const cosRotation = Math.cos(angle);
 		const sinRotation = Math.sin(angle);
-		const tickFontSize = valueOrDefault(ticksOpts.fontSize, defaults.global.defaultFontSize);
+		const tickFontSize = valueOrDefault(ticksOpts.fontSize, defaults.fontSize);
 
 		return {
 			w: (tickLabelWidth * cosRotation) + (tickFontSize * sinRotation),

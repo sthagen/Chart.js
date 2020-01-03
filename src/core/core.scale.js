@@ -200,7 +200,7 @@ function parseFontOptions(options, nestedOpts) {
 		fontStyle: valueOrDefault(nestedOpts.fontStyle, options.fontStyle),
 		lineHeight: valueOrDefault(nestedOpts.lineHeight, options.lineHeight)
 	}), {
-		color: resolve([nestedOpts.fontColor, options.fontColor, defaults.global.defaultFontColor])
+		color: resolve([nestedOpts.fontColor, options.fontColor, defaults.fontColor])
 	});
 }
 
@@ -976,7 +976,7 @@ class Scale extends Element {
 			scale: me,
 			tick: ticks[0],
 		};
-		var axisWidth = gridLines.drawBorder ? resolve([gridLines.lineWidth, 0], context, 0) : 0;
+		var axisWidth = gridLines.drawBorder ? resolve([gridLines.borderWidth, gridLines.lineWidth, 0], context, 0) : 0;
 		var axisHalfWidth = axisWidth / 2;
 		var alignBorderValue = function(pixel) {
 			return alignPixel(chart, pixel, axisWidth);
@@ -1186,7 +1186,7 @@ class Scale extends Element {
 			scale: me,
 			tick: me.ticks[0],
 		};
-		var axisWidth = gridLines.drawBorder ? resolve([gridLines.lineWidth, 0], context, 0) : 0;
+		var axisWidth = gridLines.drawBorder ? resolve([gridLines.borderWidth, gridLines.lineWidth, 0], context, 0) : 0;
 		var items = me._gridLineItems || (me._gridLineItems = me._computeGridLineItems(chartArea));
 		var width, color, i, ilen, item;
 
@@ -1243,7 +1243,7 @@ class Scale extends Element {
 			}
 
 			ctx.lineWidth = axisWidth;
-			ctx.strokeStyle = resolve([gridLines.color], context, 0);
+			ctx.strokeStyle = resolve([gridLines.borderColor, gridLines.color], context, 0);
 			ctx.beginPath();
 			ctx.moveTo(x1, y1);
 			ctx.lineTo(x2, y2);
@@ -1307,7 +1307,7 @@ class Scale extends Element {
 			return;
 		}
 
-		var scaleLabelFontColor = valueOrDefault(scaleLabel.fontColor, defaults.global.defaultFontColor);
+		var scaleLabelFontColor = valueOrDefault(scaleLabel.fontColor, defaults.fontColor);
 		var scaleLabelFont = helpers.options._parseFont(scaleLabel);
 		var scaleLabelPadding = helpers.options.toPadding(scaleLabel.padding);
 		var halfLineHeight = scaleLabelFont.lineHeight / 2;
