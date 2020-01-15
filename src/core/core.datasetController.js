@@ -443,13 +443,30 @@ helpers.extend(DatasetController.prototype, {
 		const labelsChanged = me._labelCheck();
 		const scaleChanged = me._scaleCheck();
 		const meta = me._cachedMeta;
+		const dataset = me.getDataset();
+		let stackChanged = false;
 
 		// make sure cached _stacked status is current
 		meta._stacked = isStacked(meta.vScale, meta);
 
+		// detect change in stack option
+		if (meta.stack !== dataset.stack) {
+			stackChanged = true;
+			// remove values from old stack
+			meta._parsed.forEach(function(parsed) {
+				delete parsed._stacks[meta.vScale.id][meta.index];
+			});
+			meta.stack = dataset.stack;
+		}
+
 		// Re-sync meta data in case the user replaced the data array or if we missed
 		// any updates and so make sure that we handle number of datapoints changing.
-		me.resyncElements(dataChanged | labelsChanged | scaleChanged);
+		me.resyncElements(dataChanged | labelsChanged | scaleChanged | stackChanged);
+
+		// if stack changed, update stack values for the whole dataset
+		if (stackChanged) {
+			updateStacks(me, meta._parsed);
+		}
 	},
 
 	/**
@@ -459,7 +476,7 @@ helpers.extend(DatasetController.prototype, {
 	_configure: function() {
 		const me = this;
 		me._config = helpers.merge({}, [
-			me.chart.options.datasets[me._type],
+			me.chart.options[me._type].datasets,
 			me.getDataset(),
 		], {
 			merger: function(key, target, source) {
@@ -635,11 +652,10 @@ helpers.extend(DatasetController.prototype, {
 		const ilen = _parsed.length;
 		const otherScale = this._getOtherScale(scale);
 		const stack = canStack && meta._stacked && {keys: getSortedDatasetIndices(this.chart, true), values: null};
+		let min = Number.POSITIVE_INFINITY;
 		let max = Number.NEGATIVE_INFINITY;
 		let {min: otherMin, max: otherMax} = getUserBounds(otherScale);
-		let i, item, value, parsed, min, minPositive, otherValue;
-
-		min = minPositive = Number.POSITIVE_INFINITY;
+		let i, item, value, parsed, otherValue;
 
 		function _compute() {
 			if (stack) {
@@ -652,9 +668,6 @@ helpers.extend(DatasetController.prototype, {
 			}
 			min = Math.min(min, value);
 			max = Math.max(max, value);
-			if (value > 0) {
-				minPositive = Math.min(minPositive, value);
-			}
 		}
 
 		function _skip() {
@@ -683,7 +696,7 @@ helpers.extend(DatasetController.prototype, {
 				break;
 			}
 		}
-		return {min, max, minPositive};
+		return {min, max};
 	},
 
 	/**

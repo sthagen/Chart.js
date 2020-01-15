@@ -12,6 +12,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 ### Ticks
 
 * `options.ticks.userCallback` was renamed to `options.ticks.callback`
+* `options.ticks.major` and `options.ticks.minor` were replaced with scriptable options for tick fonts.
 
 ### Tooltip
 
@@ -44,6 +45,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 
 ### Options
 
+* Dataset options are now configured as `options[type].datasets` rather than `options.datasets[type]`
 * `Polar area` `startAngle` option is now consistent with `Radar`, 0 is at top and value is in degrees. Default is changed from `-½π` to  `0`.
 * `scales.[x/y]Axes` arrays were removed. Scales are now configured directly to `options.scales` object with the object key being the scale Id.
 * `scales.[x/y]Axes.barPercentage` was moved to dataset option `barPercentage`
@@ -101,6 +103,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 * `ILayoutItem.minSize`
 * `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
 * `Line.calculatePointY`
+* `LogarithmicScale.minNotZero`
 * `Scale.getRightValue`
 * `Scale.handleDirectionalChanges` is now private
 * `Scale.longestLabelWidth`
@@ -116,6 +119,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 * `Element._ctx`
 * `Element._model`
 * `Element._view`
+* `LogarithmicScale._valueOffset`
 * `TimeScale._getPixelForOffset`
 * `TimeScale.getLabelWidth`
 * `Tooltip._lastActive`
