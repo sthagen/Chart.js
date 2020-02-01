@@ -11,11 +11,7 @@ import * as options from './helpers.options';
 import * as math from './helpers.math';
 import * as rtl from './helpers.rtl';
 
-const colorHelper = !color ?
-	function(value) {
-		console.error('Color.js not found!');
-		return value;
-	} :
+const colorHelper =
 	function(value) {
 		if (value instanceof CanvasGradient || value instanceof CanvasPattern) {
 			// TODO: figure out what this should be. Previously returned
@@ -36,34 +32,6 @@ export default {
 	math,
 	rtl,
 
-	// Implementation of the nice number algorithm used in determining where axis labels will go
-	niceNum: function(range, round) {
-		var exponent = Math.floor(math.log10(range));
-		var fraction = range / Math.pow(10, exponent);
-		var niceFraction;
-
-		if (round) {
-			if (fraction < 1.5) {
-				niceFraction = 1;
-			} else if (fraction < 3) {
-				niceFraction = 2;
-			} else if (fraction < 7) {
-				niceFraction = 5;
-			} else {
-				niceFraction = 10;
-			}
-		} else if (fraction <= 1.0) {
-			niceFraction = 1;
-		} else if (fraction <= 2) {
-			niceFraction = 2;
-		} else if (fraction <= 5) {
-			niceFraction = 5;
-		} else {
-			niceFraction = 10;
-		}
-
-		return niceFraction * Math.pow(10, exponent);
-	},
 	// Request animation polyfill
 	requestAnimFrame: (function() {
 		if (typeof window === 'undefined') {
