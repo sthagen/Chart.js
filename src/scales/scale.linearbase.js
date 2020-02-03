@@ -37,7 +37,7 @@ function niceNum(range, round) {
  * Generate a set of linear ticks
  * @param generationOptions the options used to generate the ticks
  * @param dataRange the range of the data
- * @returns {number[]} array of tick values
+ * @returns {object[]} array of tick objects
  */
 function generateTicks(generationOptions, dataRange) {
 	const ticks = [];
@@ -270,7 +270,7 @@ class LinearScaleBase extends Scale {
 	}
 
 	getLabelForValue(value) {
-		return new Intl.NumberFormat().format(value);
+		return new Intl.NumberFormat(this.options.locale).format(value);
 	}
 }
 
