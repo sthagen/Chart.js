@@ -30,6 +30,8 @@ class LineController extends DatasetController {
 
 	constructor(chart, datasetIndex) {
 		super(chart, datasetIndex);
+
+		this._showLine = undefined;
 	}
 
 	update(mode) {
@@ -52,9 +54,7 @@ class LineController extends DatasetController {
 		}
 
 		// Update Points
-		if (meta.visible) {
-			me.updateElements(points, 0, mode);
-		}
+		me.updateElements(points, 0, mode);
 	}
 
 	updateElements(points, start, mode) {

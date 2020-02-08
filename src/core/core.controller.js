@@ -10,6 +10,10 @@ import {BasicPlatform, DomPlatform} from '../platform/platforms';
 import plugins from './core.plugins';
 import scaleService from '../core/core.scaleService';
 
+/**
+ * @typedef { import("../platform/platform.base").IEvent } IEvent
+ */
+
 const valueOrDefault = helpers.valueOrDefault;
 
 function mergeScaleConfig(config, options) {
@@ -76,7 +80,7 @@ function initConfig(config) {
 
 	// Do NOT use mergeConfig for the data object because this method merges arrays
 	// and so would change references to labels and datasets, preventing data updates.
-	const data = config.data = config.data || {};
+	const data = config.data = config.data || {datasets: [], labels: []};
 	data.datasets = data.datasets || [];
 	data.labels = data.labels || [];
 
@@ -174,24 +178,36 @@ class Chart {
 
 		config = initConfig(config);
 		const initialCanvas = getCanvas(item);
-		me._initializePlatform(initialCanvas, config);
+		this.platform = me._initializePlatform(initialCanvas, config);
 
 		const context = me.platform.acquireContext(initialCanvas, config);
 		const canvas = context && context.canvas;
 		const height = canvas && canvas.height;
 		const width = canvas && canvas.width;
 
-		me.id = helpers.uid();
-		me.ctx = context;
-		me.canvas = canvas;
-		me.config = config;
-		me.width = width;
-		me.height = height;
-		me.aspectRatio = height ? width / height : null;
-		me.options = config.options;
-		me._bufferedRender = false;
-		me._layers = [];
-		me._metasets = [];
+		this.id = helpers.uid();
+		this.ctx = context;
+		this.canvas = canvas;
+		this.config = config;
+		this.width = width;
+		this.height = height;
+		this.aspectRatio = height ? width / height : null;
+		this.options = config.options;
+		this._bufferedRender = false;
+		this._layers = [];
+		this._metasets = [];
+		this.boxes = [];
+		this.currentDevicePixelRatio = undefined;
+		this.chartArea = undefined;
+		this.data = undefined;
+		this.active = undefined;
+		this.lastActive = undefined;
+		this._lastEvent = undefined;
+		this._listeners = {resize: undefined};
+		this._sortedMetasets = [];
+		this._updating = false;
+		this.scales = {};
+		this.scale = undefined;
 
 		// Add the chart instance to the global namespace
 		Chart.instances[me.id] = me;
@@ -250,17 +266,14 @@ class Chart {
 	 * @private
 	 */
 	_initializePlatform(canvas, config) {
-		const me = this;
-
 		if (config.platform) {
-			me.platform = new config.platform();
+			return new config.platform();
 		} else if (!isDomSupported()) {
-			me.platform = new BasicPlatform();
+			return new BasicPlatform();
 		} else if (window.OffscreenCanvas && canvas instanceof window.OffscreenCanvas) {
-			me.platform = new BasicPlatform();
-		} else {
-			me.platform = new DomPlatform();
+			return new BasicPlatform();
 		}
+		return new DomPlatform();
 	}
 
 	clear() {
@@ -594,13 +607,14 @@ class Chart {
 	 */
 	updateDatasets(mode) {
 		const me = this;
+		const isFunction = typeof mode === 'function';
 
 		if (plugins.notify(me, 'beforeDatasetsUpdate') === false) {
 			return;
 		}
 
 		for (let i = 0, ilen = me.data.datasets.length; i < ilen; ++i) {
-			me.updateDataset(i, mode);
+			me.updateDataset(i, isFunction ? mode({datesetIndex: i}) : mode);
 		}
 
 		plugins.notify(me, 'afterDatasetsUpdate');
@@ -841,6 +855,30 @@ class Chart {
 	/**
 	 * @private
 	 */
+	_updateDatasetVisibility(datasetIndex, visible) {
+		const me = this;
+		const mode = visible ? 'show' : 'hide';
+		const meta = me.getDatasetMeta(datasetIndex);
+		const anims = meta.controller._resolveAnimations(undefined, mode);
+		me.setDatasetVisibility(datasetIndex, visible);
+
+		// Animate visible state, so hide animation can be seen. This could be handled better if update / updateDataset returned a Promise.
+		anims.update(meta, {visible});
+
+		me.update((ctx) => ctx.datasetIndex === datasetIndex ? mode : undefined);
+	}
+
+	hide(datasetIndex) {
+		this._updateDatasetVisibility(datasetIndex, false);
+	}
+
+	show(datasetIndex) {
+		this._updateDatasetVisibility(datasetIndex, true);
+	}
+
+	/**
+	 * @private
+	 */
 	destroyDatasetMeta(datasetIndex) {
 		const me = this;
 		const meta = me._metasets && me._metasets[datasetIndex];
@@ -885,7 +923,7 @@ class Chart {
 	 */
 	bindEvents() {
 		const me = this;
-		const listeners = me._listeners = {};
+		const listeners = me._listeners;
 		let listener = function() {
 			me.eventHandler.apply(me, arguments);
 		};
