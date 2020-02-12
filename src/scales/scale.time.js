@@ -15,7 +15,7 @@ import {_lookup, _lookupByKey} from '../helpers/helpers.collection';
 const MAX_INTEGER = Number.MAX_SAFE_INTEGER || 9007199254740991;
 
 /**
- * @type {Map<Unit, {common: boolean, size: number, steps: number|undefined}>}
+ * @type {Map<Unit, {common: boolean, size: number, steps?: number}>}
  */
 const INTERVALS = new Map();
 INTERVALS.set('millisecond', {common: true, size: 1, steps: 1000});
@@ -26,7 +26,7 @@ INTERVALS.set('day', {common: true, size: 86400000, steps: 30});
 INTERVALS.set('week', {common: false, size: 604800000, steps: 4});
 INTERVALS.set('month', {common: true, size: 2.628e9, steps: 12});
 INTERVALS.set('quarter', {common: false, size: 7.884e9, steps: 4});
-INTERVALS.set('year', {common: true, size: 3.154e10, steps: undefined});
+INTERVALS.set('year', {common: true, size: 3.154e10});
 
 /**
  * @type {Unit[]}
@@ -605,6 +605,7 @@ class TimeScale extends Scale {
 	 * @param {*} raw
 	 * @param {number} index
 	 * @return {number}
+	 * @private
 	 */
 	_parse(raw, index) { // eslint-disable-line no-unused-vars
 		if (raw === undefined) {
@@ -618,6 +619,7 @@ class TimeScale extends Scale {
 	 * @param {string} axis
 	 * @param {number} index
 	 * @return {number}
+	 * @private
 	 */
 	_parseObject(obj, axis, index) {
 		if (obj && obj.t) {
@@ -629,6 +631,9 @@ class TimeScale extends Scale {
 		return null;
 	}
 
+	/**
+	 * @private
+	 */
 	_invalidateCaches() {
 		this._cache = {
 			data: [],
