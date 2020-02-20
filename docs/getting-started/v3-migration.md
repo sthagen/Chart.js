@@ -72,6 +72,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * `scales.[x/y]Axes.time.format` was renamed to `scales[id].time.parser`
 * `scales.[x/y]Axes.time.max` was renamed to `scales[id].max`
 * `scales.[x/y]Axes.time.min` was renamed to `scales[id].min`
+* The dataset option `steppedLine` was removed. Use `stepped`
 * The dataset option `tension` was removed. Use `lineTension`
 * To override the platform class used in a chart instance, pass `platform: PlatformClass` in the config object. Note that the class should be passed, not an instance of the class.
 
@@ -128,15 +129,18 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 * `helpers.where`
 * `ILayoutItem.minSize`
 * `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
+* `Legend.margins` is now private
 * `Line.calculatePointY`
 * `LogarithmicScale.minNotZero`
 * `Scale.getRightValue`
 * `Scale.handleDirectionalChanges` is now private
 * `Scale.longestLabelWidth`
 * `Scale.longestTextCache` is now private
+* `Scale.margins` is now private
 * `Scale.mergeTicksOptions`
 * `Scale.ticksAsNumbers`
 * `Scale.tickValues` is now private
+* `Title.margins` is now private
 * The tooltip item's `x` and `y` attributes were removed. Use `datasetIndex` and `index` to get the element and any corresponding data from it
 
 #### Removal of private APIs
