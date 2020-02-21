@@ -57,7 +57,10 @@ const defaultConfig = {
 	}
 };
 
-class LogarithmicScale extends Scale {
+export default class LogarithmicScale extends Scale {
+
+	// INTERNAL: static default options, registered in src/index.js
+	static _defaults = defaultConfig;
 
 	constructor(cfg) {
 		super(cfg);
@@ -68,8 +71,7 @@ class LogarithmicScale extends Scale {
 		this.end = undefined;
 		/** @type {number} */
 		this._startValue = undefined;
-		/** @type {number} */
-		this._valueRange = undefined;
+		this._valueRange = 0;
 	}
 
 	/**
@@ -195,7 +197,3 @@ class LogarithmicScale extends Scale {
 		return Math.pow(10, me._startValue + decimal * me._valueRange);
 	}
 }
-
-// INTERNAL: static default options, registered in src/index.js
-LogarithmicScale._defaults = defaultConfig;
-export default LogarithmicScale;

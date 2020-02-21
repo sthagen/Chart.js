@@ -24,12 +24,12 @@ defaults.set('line', {
 	}
 });
 
-class LineController extends DatasetController {
+export default class LineController extends DatasetController {
 
 	constructor(chart, datasetIndex) {
 		super(chart, datasetIndex);
 
-		this._showLine = undefined;
+		this._showLine = false;
 	}
 
 	update(mode) {
@@ -195,5 +195,3 @@ LineController.prototype._dataElementOptions = {
 	radius: 'pointRadius',
 	rotation: 'pointRotation'
 };
-
-export default LineController;

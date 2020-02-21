@@ -8,6 +8,8 @@ import {BasicPlatform, DomPlatform} from '../platform/platforms';
 import plugins from './core.plugins';
 import scaleService from '../core/core.scaleService';
 import {getMaximumWidth, getMaximumHeight} from '../helpers/helpers.dom';
+// @ts-ignore
+import {version} from '../../package.json';
 
 /**
  * @typedef { import("../platform/platform.base").IEvent } IEvent
@@ -171,7 +173,17 @@ function getCanvas(item) {
 	return item;
 }
 
-class Chart {
+export default class Chart {
+
+	static version = version;
+
+	/**
+	 * NOTE(SB) We actually don't use this container anymore but we need to keep it
+	 * for backward compatibility. Though, it can still be useful for plugins that
+	 * would need to work on multiple charts?!
+	 */
+	static instances = {};
+
 	constructor(item, config) {
 		const me = this;
 
@@ -202,7 +214,8 @@ class Chart {
 		this.active = undefined;
 		this.lastActive = undefined;
 		this._lastEvent = undefined;
-		this._listeners = {resize: undefined};
+		/** @type {{resize?: function}} */
+		this._listeners = {};
 		this._sortedMetasets = [];
 		this._updating = false;
 		this.scales = {};
@@ -1068,12 +1081,3 @@ class Chart {
 		return changed;
 	}
 }
-
-/**
- * NOTE(SB) We actually don't use this container anymore but we need to keep it
- * for backward compatibility. Though, it can still be useful for plugins that
- * would need to work on multiple charts?!
- */
-Chart.instances = {};
-
-export default Chart;

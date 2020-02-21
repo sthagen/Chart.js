@@ -3,17 +3,18 @@ import Scale from '../core/core.scale';
 const defaultConfig = {
 };
 
-class CategoryScale extends Scale {
+export default class CategoryScale extends Scale {
+
+	// INTERNAL: static default options, registered in src/index.js
+	static _defaults = defaultConfig;
 
 	constructor(cfg) {
 		super(cfg);
 
-		/** @type {number} */
-		this._numLabels = undefined;
+		this._numLabels = 0;
 		/** @type {number} */
 		this._startValue = undefined;
-		/** @type {number} */
-		this._valueRange = undefined;
+		this._valueRange = 0;
 	}
 
 	/**
@@ -108,7 +109,3 @@ class CategoryScale extends Scale {
 		return this.bottom;
 	}
 }
-
-// INTERNAL: static default options, registered in src/index.js
-CategoryScale._defaults = defaultConfig;
-export default CategoryScale;

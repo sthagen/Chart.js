@@ -6,6 +6,10 @@ import {_factorize, toDegrees, toRadians} from '../helpers/helpers.math';
 import {_parseFont, resolve, toPadding} from '../helpers/helpers.options';
 import Ticks from './core.ticks';
 
+/**
+ * @typedef { import("./core.controller").default } Chart
+ */
+
 defaults.set('scale', {
 	display: true,
 	offset: false,
@@ -219,7 +223,7 @@ function skip(ticks, newTicks, spacing, majorStart, majorEnd) {
 	}
 }
 
-class Scale extends Element {
+export default class Scale extends Element {
 
 	// eslint-disable-next-line max-statements
 	constructor(cfg) {
@@ -227,10 +231,13 @@ class Scale extends Element {
 
 		/** @type {string} */
 		this.id = cfg.id;
+		/** @type {string} */
 		this.type = cfg.type;
 		/** @type {object} */
 		this.options = cfg.options;
+		/** @type {CanvasRenderingContext2D} */
 		this.ctx = cfg.ctx;
+		/** @type {Chart} */
 		this.chart = cfg.chart;
 
 		// implements box
@@ -273,26 +280,24 @@ class Scale extends Element {
 		this.min = undefined;
 		this.max = undefined;
 		/** @type {object[]} */
-		this.ticks = null;
+		this.ticks = [];
 		/** @type {object[]|null} */
 		this._gridLineItems = null;
 		/** @type {object[]|null} */
 		this._labelItems = null;
 		/** @type {object|null} */
 		this._labelSizes = null;
-		/** @type {number} */
-		this._length = undefined;
-		/** @type {object} */
+		this._length = 0;
 		this._longestTextCache = {};
 		/** @type {number} */
 		this._startPixel = undefined;
 		/** @type {number} */
 		this._endPixel = undefined;
-		this._reversePixels = undefined;
+		this._reversePixels = false;
 		this._userMax = undefined;
 		this._userMin = undefined;
-		this._ticksLength = undefined;
-		this._borderValue = undefined;
+		this._ticksLength = 0;
+		this._borderValue = 0;
 	}
 
 	/**
@@ -1418,7 +1423,9 @@ class Scale extends Element {
 		const position = options.position;
 		const isReverse = me.options.reverse;
 		let rotation = 0;
-		let scaleLabelX, scaleLabelY, textAlign;
+		/** @type CanvasTextAlign */
+		let textAlign;
+		let scaleLabelX, scaleLabelY;
 
 		if (me.isHorizontal()) {
 			switch (scaleLabelAlign) {
@@ -1565,5 +1572,3 @@ class Scale extends Element {
 }
 
 Scale.prototype._draw = Scale.prototype.draw;
-
-export default Scale;
