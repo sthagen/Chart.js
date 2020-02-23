@@ -121,7 +121,7 @@ class simpleArc {
 function computeCircularBoundary(source) {
 	const {scale, fill} = source;
 	const options = scale.options;
-	const length = scale._getLabels().length;
+	const length = scale.getLabels().length;
 	const target = [];
 	const start = options.reverse ? scale.max : scale.min;
 	const end = options.reverse ? scale.min : scale.max;
@@ -433,9 +433,8 @@ export default {
 	},
 
 	beforeDatasetsDraw(chart) {
-		const metasets = chart._getSortedVisibleDatasetMetas();
+		const metasets = chart.getSortedVisibleDatasetMetas();
 		const area = chart.chartArea;
-		const ctx = chart.ctx;
 		let i, meta;
 
 		for (i = metasets.length - 1; i >= 0; --i) {
@@ -445,23 +444,26 @@ export default {
 				meta.line.updateControlPoints(area);
 			}
 		}
+	},
 
-		for (i = metasets.length - 1; i >= 0; --i) {
-			meta = metasets[i].$filler;
+	beforeDatasetDraw(chart, args) {
+		const area = chart.chartArea;
+		const ctx = chart.ctx;
+		const meta = args.meta.$filler;
 
-			if (!meta || meta.fill === false) {
-				continue;
-			}
-			const {line, target, scale} = meta;
-			const lineOpts = line.options;
-			const fillOption = lineOpts.fill;
-			const color = lineOpts.backgroundColor || defaults.color;
-			const {above = color, below = color} = fillOption || {};
-			if (target && line.points.length) {
-				clipArea(ctx, area);
-				doFill(ctx, {line, target, above, below, area, scale});
-				unclipArea(ctx);
-			}
+		if (!meta || meta.fill === false) {
+			return;
+		}
+
+		const {line, target, scale} = meta;
+		const lineOpts = line.options;
+		const fillOption = lineOpts.fill;
+		const color = lineOpts.backgroundColor || defaults.color;
+		const {above = color, below = color} = fillOption || {};
+		if (target && line.points.length) {
+			clipArea(ctx, area);
+			doFill(ctx, {line, target, above, below, area, scale});
+			unclipArea(ctx);
 		}
 	}
 };

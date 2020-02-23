@@ -8,6 +8,7 @@ import Ticks from './core.ticks';
 
 /**
  * @typedef { import("./core.controller").default } Chart
+ * @typedef {{value:any, label?:string, major?:boolean}} Tick
  */
 
 defaults.set('scale', {
@@ -64,7 +65,11 @@ defaults.set('scale', {
 	}
 });
 
-/** Returns a new array containing numItems from arr */
+/**
+ * Returns a new array containing numItems from arr
+ * @param {any[]} arr
+ * @param {number} numItems
+ */
 function sample(arr, numItems) {
 	const result = [];
 	const increment = arr.length / numItems;
@@ -77,6 +82,11 @@ function sample(arr, numItems) {
 	return result;
 }
 
+/**
+ * @param {Scale} scale
+ * @param {number} index
+ * @param {boolean} offsetGridLines
+ */
 function getPixelForGridLine(scale, index, offsetGridLines) {
 	const length = scale.ticks.length;
 	const validIndex = Math.min(index, length - 1);
@@ -104,6 +114,10 @@ function getPixelForGridLine(scale, index, offsetGridLines) {
 	return lineValue;
 }
 
+/**
+ * @param {object} caches
+ * @param {number} length
+ */
 function garbageCollect(caches, length) {
 	each(caches, (cache) => {
 		const gc = cache.gc;
@@ -118,10 +132,16 @@ function garbageCollect(caches, length) {
 	});
 }
 
+/**
+ * @param {object} options
+ */
 function getTickMarkLength(options) {
 	return options.drawTicks ? options.tickMarkLength : 0;
 }
 
+/**
+ * @param {object} options
+ */
 function getScaleLabelHeight(options) {
 	if (!options.display) {
 		return 0;
@@ -133,6 +153,9 @@ function getScaleLabelHeight(options) {
 	return font.lineHeight + padding.height;
 }
 
+/**
+ * @param {number[]} arr
+ */
 function getEvenSpacing(arr) {
 	const len = arr.length;
 	let i, diff;
@@ -149,6 +172,12 @@ function getEvenSpacing(arr) {
 	return diff;
 }
 
+/**
+ * @param {number[]} majorIndices
+ * @param {Tick[]} ticks
+ * @param {number} axisLength
+ * @param {number} ticksLimit
+ */
 function calculateSpacing(majorIndices, ticks, axisLength, ticksLimit) {
 	const evenMajorSpacing = getEvenSpacing(majorIndices);
 	const spacing = ticks.length / ticksLimit;
@@ -169,6 +198,9 @@ function calculateSpacing(majorIndices, ticks, axisLength, ticksLimit) {
 	return Math.max(spacing, 1);
 }
 
+/**
+ * @param {Tick[]} ticks
+ */
 function getMajorIndices(ticks) {
 	const result = [];
 	let i, ilen;
@@ -180,6 +212,12 @@ function getMajorIndices(ticks) {
 	return result;
 }
 
+/**
+ * @param {Tick[]} ticks
+ * @param {Tick[]} newTicks
+ * @param {number[]} majorIndices
+ * @param {number} spacing
+ */
 function skipMajors(ticks, newTicks, majorIndices, spacing) {
 	let count = 0;
 	let next = majorIndices[0];
@@ -195,6 +233,13 @@ function skipMajors(ticks, newTicks, majorIndices, spacing) {
 	}
 }
 
+/**
+ * @param {Tick[]} ticks
+ * @param {Tick[]} newTicks
+ * @param {number} spacing
+ * @param {number} [majorStart]
+ * @param {number} [majorEnd]
+ */
 function skip(ticks, newTicks, spacing, majorStart, majorEnd) {
 	const start = valueOrDefault(majorStart, 0);
 	const end = Math.min(valueOrDefault(majorEnd, ticks.length), ticks.length);
@@ -279,7 +324,7 @@ export default class Scale extends Element {
 		this.labelRotation = undefined;
 		this.min = undefined;
 		this.max = undefined;
-		/** @type {object[]} */
+		/** @type {Tick[]} */
 		this.ticks = [];
 		/** @type {object[]|null} */
 		this._gridLineItems = null;
@@ -304,10 +349,9 @@ export default class Scale extends Element {
 	 * Parse a supported input value to internal representation.
 	 * @param {*} raw
 	 * @param {number} index
-	 * @private
 	 * @since 3.0
 	 */
-	_parse(raw, index) { // eslint-disable-line no-unused-vars
+	parse(raw, index) { // eslint-disable-line no-unused-vars
 		return raw;
 	}
 
@@ -316,22 +360,22 @@ export default class Scale extends Element {
 	 * @param {object} obj
 	 * @param {string} axis
 	 * @param {number} index
-	 * @private
 	 * @since 3.0
+	 * @protected
 	 */
-	_parseObject(obj, axis, index) {
+	parseObject(obj, axis, index) {
 		if (obj[axis] !== undefined) {
-			return this._parse(obj[axis], index);
+			return this.parse(obj[axis], index);
 		}
 		return null;
 	}
 
 	/**
 	 * @return {{min: number, max: number, minDefined: boolean, maxDefined: boolean}}
-	 * @private
+	 * @protected
 	 * @since 3.0
 	 */
-	_getUserBounds() {
+	getUserBounds() {
 		let min = this._userMin;
 		let max = this._userMax;
 		if (isNullOrUndef(min) || isNaN(min)) {
@@ -346,22 +390,22 @@ export default class Scale extends Element {
 	/**
 	 * @param {boolean} canStack
 	 * @return {{min: number, max: number}}
-	 * @private
+	 * @protected
 	 * @since 3.0
 	 */
-	_getMinMax(canStack) {
+	getMinMax(canStack) {
 		const me = this;
 		// eslint-disable-next-line prefer-const
-		let {min, max, minDefined, maxDefined} = me._getUserBounds();
+		let {min, max, minDefined, maxDefined} = me.getUserBounds();
 		let minmax;
 
 		if (minDefined && maxDefined) {
 			return {min, max};
 		}
 
-		const metas = me._getMatchingVisibleMetas();
+		const metas = me.getMatchingVisibleMetas();
 		for (let i = 0, ilen = metas.length; i < ilen; ++i) {
-			minmax = metas[i].controller._getMinMax(me, canStack);
+			minmax = metas[i].controller.getMinMax(me, canStack);
 			if (!minDefined) {
 				min = Math.min(min, minmax.min);
 			}
@@ -373,10 +417,7 @@ export default class Scale extends Element {
 		return {min, max};
 	}
 
-	/**
-	 * @private
- 	 */
-	_invalidateCaches() {}
+	invalidateCaches() {}
 
 	/**
 	 * Get the padding needed for the scale
@@ -394,8 +435,8 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * Returns the scale tick objects ({label, major})
-	 * @return {object[]}
+	 * Returns the scale tick objects
+	 * @return {Tick[]}
 	 * @since 2.7
 	 */
 	getTicks() {
@@ -404,9 +445,8 @@ export default class Scale extends Element {
 
 	/**
 	 * @return {string[]}
-	 * @private
 	 */
-	_getLabels() {
+	getLabels() {
 		const data = this.chart.data;
 		return this.options.labels || (this.isHorizontal() ? data.xLabels : data.yLabels) || data.labels || [];
 	}
@@ -472,11 +512,11 @@ export default class Scale extends Element {
 		const samplingEnabled = sampleSize < me.ticks.length;
 		me._convertTicksToLabels(samplingEnabled ? sample(me.ticks, sampleSize) : me.ticks);
 
-		// _configure is called twice, once here, once from core.controller.updateLayout.
+		// configure is called twice, once here, once from core.controller.updateLayout.
 		// Here we haven't been positioned yet, but dimensions are correct.
-		// Variables set in _configure are needed for calculateLabelRotation, and
+		// Variables set in configure are needed for calculateLabelRotation, and
 		// it's ok that coordinates are not correct there, only dimensions matter.
-		me._configure();
+		me.configure();
 
 		// Tick Rotation
 		me.beforeCalculateLabelRotation();
@@ -501,9 +541,9 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * @private
+	 * @protected
 	 */
-	_configure() {
+	configure() {
 		const me = this;
 		let reversePixels = me.options.reverse;
 		let startPixel, endPixel;
@@ -586,7 +626,7 @@ export default class Scale extends Element {
 	}
 	/**
 	 * Convert ticks to label strings
-	 * @param {object[]} ticks
+	 * @param {Tick[]} ticks
 	 */
 	generateTickLabels(ticks) {
 		const me = this;
@@ -790,7 +830,7 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * @param {object[]} ticks
+	 * @param {Tick[]} ticks
 	 * @private
 	 */
 	_convertTicksToLabels(ticks) {
@@ -977,8 +1017,8 @@ export default class Scale extends Element {
 
 	/**
 	 * Returns a subset of ticks to be plotted to avoid overlapping labels.
-	 * @param {object[]} ticks
-	 * @return {object[]}
+	 * @param {Tick[]} ticks
+	 * @return {Tick[]}
 	 * @private
 	 */
 	_autoSkip(ticks) {
@@ -1049,7 +1089,7 @@ export default class Scale extends Element {
 			return !!display;
 		}
 
-		return this._getMatchingVisibleMetas().length > 0;
+		return this.getMatchingVisibleMetas().length > 0;
 	}
 
 	/**
@@ -1077,7 +1117,7 @@ export default class Scale extends Element {
 		const alignBorderValue = function(pixel) {
 			return _alignPixel(chart, pixel, axisWidth);
 		};
-		let borderValue, i, tick, lineValue, alignedLineValue;
+		let borderValue, i, lineValue, alignedLineValue;
 		let tx1, ty1, tx2, ty2, x1, y1, x2, y2;
 
 		if (position === 'top') {
@@ -1133,7 +1173,8 @@ export default class Scale extends Element {
 		}
 
 		for (i = 0; i < ticksLength; ++i) {
-			tick = ticks[i] || {};
+			/** @type {Tick|object} */
+			const tick = ticks[i] || {};
 
 			context = {
 				scale: me,
@@ -1269,9 +1310,9 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * @private
+	 * @protected
 	 */
-	_drawGrid(chartArea) {
+	drawGrid(chartArea) {
 		const me = this;
 		const gridLines = me.options.gridLines;
 		const ctx = me.ctx;
@@ -1348,9 +1389,9 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * @private
+	 * @protected
 	 */
-	_drawLabels(chartArea) {
+	drawLabels(chartArea) {
 		const me = this;
 		const optionTicks = me.options.ticks;
 
@@ -1403,9 +1444,9 @@ export default class Scale extends Element {
 	}
 
 	/**
-	 * @private
+	 * @protected
 	 */
-	_drawTitle(chartArea) { // eslint-disable-line no-unused-vars
+	drawTitle(chartArea) { // eslint-disable-line no-unused-vars
 		const me = this;
 		const ctx = me.ctx;
 		const options = me.options;
@@ -1483,9 +1524,9 @@ export default class Scale extends Element {
 			return;
 		}
 
-		me._drawGrid(chartArea);
-		me._drawTitle();
-		me._drawLabels(chartArea);
+		me.drawGrid(chartArea);
+		me.drawTitle();
+		me.drawLabels(chartArea);
 	}
 
 	/**
@@ -1511,13 +1552,13 @@ export default class Scale extends Element {
 		return [{
 			z: gz,
 			draw(chartArea) {
-				me._drawGrid(chartArea);
-				me._drawTitle();
+				me.drawGrid(chartArea);
+				me.drawTitle();
 			}
 		}, {
 			z: tz,
 			draw(chartArea) {
-				me._drawLabels(chartArea);
+				me.drawLabels(chartArea);
 			}
 		}];
 	}
@@ -1526,11 +1567,10 @@ export default class Scale extends Element {
 	 * Returns visible dataset metas that are attached to this scale
 	 * @param {string} [type] - if specified, also filter by dataset type
 	 * @return {object[]}
-	 * @private
 	 */
-	_getMatchingVisibleMetas(type) {
+	getMatchingVisibleMetas(type) {
 		const me = this;
-		const metas = me.chart._getSortedVisibleDatasetMetas();
+		const metas = me.chart.getSortedVisibleDatasetMetas();
 		const axisID = me.axis + 'AxisID';
 		const result = [];
 		let i, ilen;
