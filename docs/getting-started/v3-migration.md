@@ -155,7 +155,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 #### Ticks
 
 * `options.ticks.major` and `options.ticks.minor` were replaced with scriptable options for tick fonts.
-* `Chart.Ticks.formatters.linear` and `Chart.Ticks.formatters.logarithmic` were replaced with `Chart.Ticks.formatters.numeric`.
+* `Chart.Ticks.formatters.linear` was renamed to `Chart.Ticks.formatters.numeric`.
 
 #### Tooltip
 
@@ -171,10 +171,10 @@ The following properties and methods were removed:
 * `Chart.borderWidth`
 * `Chart.chart.chart`
 * `Chart.Controller`
-* `Chart.innerRadius`
+* `Chart.innerRadius` now lives on doughnut, pie, and polarArea controllers
 * `Chart.offsetX`
 * `Chart.offsetY`
-* `Chart.outerRadius`
+* `Chart.outerRadius` now lives on doughnut, pie, and polarArea controllers
 * `Chart.prototype.generateLegend`
 * `Chart.platform`. It only contained `disableCSSInjection`. CSS is never injected in v3.
 * `Chart.radiusLength`
