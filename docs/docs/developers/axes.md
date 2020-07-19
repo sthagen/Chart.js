@@ -5,11 +5,28 @@ title: New Axes
 Axes in Chart.js can be individually extended. Axes should always derive from `Chart.Scale` but this is not a mandatory requirement.
 
 ```javascript
-let MyScale = Chart.Scale.extend({
+class MyScale extends Chart.Scale {
     /* extensions ... */
-});
+}
 MyScale.id = 'myScale';
 MyScale.defaults = defaultConfigObject;
+
+// Or in classic style
+/*
+function MyScale() {
+  Chart.Scale.call(this, arguments);
+  // constructor stuff
+}
+MyScale.prototype = Object.create(Chart.Scale.prototype);
+MyScale.prototype.constructor = MyScale;
+
+MyScale.prototype.draw = function(ctx) {
+  Chart.Scale.prototype.draw.call(this, arguments);
+  // ...
+}
+MyScale.id = 'myScale';
+MyScale.defaults = defaultConfigObject;
+*/
 
 // MyScale is now derived from Chart.Scale
 ```
@@ -17,7 +34,12 @@ MyScale.defaults = defaultConfigObject;
 Once you have created your scale class, you need to register it with the global chart object so that it can be used. A default config for the scale may be provided when registering the constructor. The first parameter to the register function is a string key that is used later to identify which scale type to use for a chart.
 
 ```javascript
-Chart.scaleService.registerScale(MyScale);
+Chart.register(MyScale);
+
+// If the scale is created in classical way, the prototype can not be used to detect what
+// you are trying to register - so you need to be explicit:
+
+// Chart.registry.addScales(MyScale);
 ```
 
 To use the new scale, simply pass in the string key to the config when creating a chart.
@@ -66,6 +88,7 @@ Scale instances are given the following properties during the fitting process.
 ```
 
 ## Scale Interface
+
 To work with Chart.js, custom scale types must implement the following interface.
 
 ```javascript
@@ -120,6 +143,7 @@ Optionally, the following methods may also be overwritten, but an implementation
 ```
 
 The Core.Scale base class also has some utility functions that you may find useful.
+
 ```javascript
 {
     // Returns true if the scale instance is horizontal

@@ -18,10 +18,9 @@ color: function(context) {
 }
 ```
 
-
 ## Indexable Options
 
-Indexable options also accept an array in which each item corresponds to the element at the same index. Note that this method requires to provide as many items as data, so, in most cases, using a [function](#scriptable-options) is more appropriated if supported.
+Indexable options also accept an array in which each item corresponds to the element at the same index. Note that if there are less items than data, the items are looped over. In many cases, using a [function](#scriptable-options) is more appropriate if supported.
 
 Example:
 
@@ -42,9 +41,10 @@ The option context is used to give contextual information when resolving options
 The context object contains the following properties:
 
 - `chart`: the associated chart
+- `dataPoint`: the parsed data values for the given `dataIndex` and `datasetIndex`
 - `dataIndex`: index of the current data
 - `dataset`: dataset at index `datasetIndex`
 - `datasetIndex`: index of the current dataset
-- `hover`: true if hovered
+- `active`: true if element is active (hovered)
 
-**Important**: since the context can represent different types of entities (dataset, data, etc.), some properties may be `undefined` so be sure to test any context property before using it.
+**Important**: since the context can represent different types of entities (dataset, data, ticks, etc.), some properties may be `undefined` so be sure to test any context property before using it.

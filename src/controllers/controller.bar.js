@@ -1,40 +1,7 @@
 import DatasetController from '../core/core.datasetController';
-import defaults from '../core/core.defaults';
-import {Rectangle} from '../elements/index';
 import {clipArea, unclipArea} from '../helpers/helpers.canvas';
-import {isArray, isNullOrUndef, valueOrDefault} from '../helpers/helpers.core';
+import {isArray, isNullOrUndef, valueOrDefault, resolveObjectKey} from '../helpers/helpers.core';
 import {_limitValue, sign} from '../helpers/helpers.math';
-
-defaults.set('bar', {
-	hover: {
-		mode: 'index'
-	},
-
-	datasets: {
-		categoryPercentage: 0.8,
-		barPercentage: 0.9,
-		animation: {
-			numbers: {
-				type: 'number',
-				properties: ['x', 'y', 'base', 'width', 'height']
-			}
-		}
-	},
-
-	scales: {
-		x: {
-			type: 'category',
-			offset: true,
-			gridLines: {
-				offsetGridLines: true
-			}
-		},
-		y: {
-			type: 'linear',
-			beginAtZero: true,
-		}
-	}
-});
 
 /**
  * Computes the "optimal" sample size to maintain bars equally sized while preventing overlap.
@@ -120,9 +87,9 @@ function computeFlexCategoryTraits(index, ruler, options) {
 	};
 }
 
-function parseFloatBar(arr, item, vScale, i) {
-	const startValue = vScale.parse(arr[0], i);
-	const endValue = vScale.parse(arr[1], i);
+function parseFloatBar(entry, item, vScale, i) {
+	const startValue = vScale.parse(entry[0], i);
+	const endValue = vScale.parse(entry[1], i);
 	const min = Math.min(startValue, endValue);
 	const max = Math.max(startValue, endValue);
 	let barStart = min;
@@ -147,6 +114,15 @@ function parseFloatBar(arr, item, vScale, i) {
 	};
 }
 
+function parseValue(entry, item, vScale, i) {
+	if (isArray(entry)) {
+		parseFloatBar(entry, item, vScale, i);
+	} else {
+		item[vScale.axis] = vScale.parse(entry, i);
+	}
+	return item;
+}
+
 function parseArrayOrPrimitive(meta, data, start, count) {
 	const iScale = meta.iScale;
 	const vScale = meta.vScale;
@@ -159,14 +135,7 @@ function parseArrayOrPrimitive(meta, data, start, count) {
 		entry = data[i];
 		item = {};
 		item[iScale.axis] = singleScale || iScale.parse(labels[i], i);
-
-		if (isArray(entry)) {
-			parseFloatBar(entry, item, vScale, i);
-		} else {
-			item[vScale.axis] = vScale.parse(entry, i);
-		}
-
-		parsed.push(item);
+		parsed.push(parseValue(entry, item, vScale, i));
 	}
 	return parsed;
 }
@@ -202,22 +171,31 @@ export default class BarController extends DatasetController {
 	 */
 	parseObjectData(meta, data, start, count) {
 		const {iScale, vScale} = meta;
-		const vProp = vScale.axis;
+		const {xAxisKey = 'x', yAxisKey = 'y'} = this._parsing;
+		const iAxisKey = iScale.axis === 'x' ? xAxisKey : yAxisKey;
+		const vAxisKey = vScale.axis === 'x' ? xAxisKey : yAxisKey;
 		const parsed = [];
-		let i, ilen, item, obj, value;
+		let i, ilen, item, obj;
 		for (i = start, ilen = start + count; i < ilen; ++i) {
 			obj = data[i];
 			item = {};
-			item[iScale.axis] = iScale.parseObject(obj, iScale.axis, i);
-			value = obj[vProp];
-			if (isArray(value)) {
-				parseFloatBar(value, item, vScale, i);
-			} else {
-				item[vScale.axis] = vScale.parseObject(obj, vProp, i);
-			}
-			parsed.push(item);
+			item[iScale.axis] = iScale.parse(resolveObjectKey(obj, iAxisKey), i);
+			parsed.push(parseValue(resolveObjectKey(obj, vAxisKey), item, vScale, i));
 		}
 		return parsed;
+	}
+
+	/**
+	 * @protected
+	 */
+	updateRangeFromParsed(range, scale, parsed, stack) {
+		super.updateRangeFromParsed(range, scale, parsed, stack);
+		const custom = parsed._custom;
+		if (custom && scale === this._cachedMeta.vScale) {
+			// float bar: only one end of the bar is considered by `super`
+			range.min = Math.min(range.min, custom.min);
+			range.max = Math.max(range.max, custom.max);
+		}
 	}
 
 	/**
@@ -246,7 +224,6 @@ export default class BarController extends DatasetController {
 
 		const meta = me._cachedMeta;
 		meta.stack = me.getDataset().stack;
-		meta.bar = true;
 	}
 
 	update(mode) {
@@ -378,7 +355,7 @@ export default class BarController extends DatasetController {
 		let i, ilen;
 
 		for (i = 0, ilen = meta.data.length; i < ilen; ++i) {
-			pixels.push(iScale.getPixelForValue(me.getParsed(i)[iScale.axis]));
+			pixels.push(iScale.getPixelForValue(me.getParsed(i)[iScale.axis], i));
 		}
 
 		// Note: a potential optimization would be to skip computing this
@@ -432,7 +409,7 @@ export default class BarController extends DatasetController {
 		// So we don't try to draw so huge rectangles.
 		// https://github.com/chartjs/Chart.js/issues/5247
 		// TODO: use borderWidth instead (need to move the parsing from rectangle)
-		const base = _limitValue(vScale.getPixelForValue(start),
+		let base = _limitValue(vScale.getPixelForValue(start),
 			vScale._startPixel - 10,
 			vScale._endPixel + 10);
 
@@ -441,6 +418,9 @@ export default class BarController extends DatasetController {
 
 		if (minBarLength !== undefined && Math.abs(size) < minBarLength) {
 			size = size < 0 ? -minBarLength : minBarLength;
+			if (value === 0) {
+				base -= size / 2;
+			}
 			head = base + size;
 		}
 
@@ -497,16 +477,51 @@ export default class BarController extends DatasetController {
 
 }
 
-BarController.prototype.dataElementType = Rectangle;
+BarController.id = 'bar';
 
-BarController.prototype.dataElementOptions = [
-	'backgroundColor',
-	'borderColor',
-	'borderSkipped',
-	'borderWidth',
-	'barPercentage',
-	'barThickness',
-	'categoryPercentage',
-	'maxBarThickness',
-	'minBarLength'
-];
+/**
+ * @type {any}
+ */
+BarController.defaults = {
+	datasetElementType: false,
+	dataElementType: 'rectangle',
+	dataElementOptions: [
+		'backgroundColor',
+		'borderColor',
+		'borderSkipped',
+		'borderWidth',
+		'barPercentage',
+		'barThickness',
+		'categoryPercentage',
+		'maxBarThickness',
+		'minBarLength'
+	],
+	hover: {
+		mode: 'index'
+	},
+
+	datasets: {
+		categoryPercentage: 0.8,
+		barPercentage: 0.9,
+		animation: {
+			numbers: {
+				type: 'number',
+				properties: ['x', 'y', 'base', 'width', 'height']
+			}
+		}
+	},
+
+	scales: {
+		_index_: {
+			type: 'category',
+			offset: true,
+			gridLines: {
+				offsetGridLines: true
+			}
+		},
+		_value_: {
+			type: 'linear',
+			beginAtZero: true,
+		}
+	}
+};

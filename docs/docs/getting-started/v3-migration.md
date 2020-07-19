@@ -12,17 +12,56 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * API documentation generated and verified by TypeDoc
 * No more CSS injection
 * Tons of bug fixes
+* Tree shaking
 
 ## End user migration
 
 ### Setup and installation
 
+* Distributed files are now in lower case. For example: `dist/chart.js`.
 * Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`. Please see the [installation](installation.md) and [integration](integration.md) docs for details on the recommended way to setup Chart.js if you were using these builds.
-* `moment` is no longer specified as an npm dependency. If you are using the time scale, you must include one of [the available adapters](https://github.com/chartjs/awesome#adapters) and corresponding date library. You no longer need to exclude moment from your build.
+* `moment` is no longer specified as an npm dependency. If you are using the `time` or `timeseries` scales, you must include one of [the available adapters](https://github.com/chartjs/awesome#adapters) and corresponding date library. You no longer need to exclude moment from your build.
+* Chart.js 3 is tree-shakeable. So if you are using it as an `npm` module in a project, you need to import and register the controllers, elements, scales and plugins you want to use. You will not have to call `register` if importing Chart.js via a `script` tag, but will not get the tree shaking benefits in this case. Here is an example of registering components:
+
+```javascript
+import Chart, LineController, Line, Point, LinearScale, Title from `chart.js`
+
+Chart.register(LineController, Line, Point, LinearScale, Title);
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    // data: ...
+    options: {
+        title: {
+            display: true,
+            text: 'Chart Title'
+        },
+        scales: {
+            x: {
+                type: 'linear'
+            },
+            y: {
+                type: 'linear'
+            }
+        }
+    }
+})
+```
+
+### Chart types
+
+* `horizontalBar` chart type was removed. Horizontal bar charts can be configured using the new [`indexAxis`](../charts/bar.md#general) option
 
 ### Options
 
 A number of changes were made to the configuration options passed to the `Chart` constructor. Those changes are documented below.
+
+#### Generic changes
+
+* Indexable options are now looping. `backgroundColor: ['red', 'green']` will result in alternating `'red'` / `'green'` if there are more than 2 data points.
+* The input properties of object data can now be freely specified, see [data structures](../general/data-structures.md) for details.
+
+#### Specific changes
 
 * `hover.animationDuration` is now configured in `animation.active.duration`
 * `responsiveAnimationDuration` is now configured in `animation.resize.duration`
@@ -49,17 +88,21 @@ A number of changes were made to the configuration options passed to the `Chart`
 * The dataset option `tension` was removed. Use `lineTension`
 * Dataset options are now configured as `options[type].datasets` rather than `options.datasets[type]`
 * To override the platform class used in a chart instance, pass `platform: PlatformClass` in the config object. Note that the class should be passed, not an instance of the class.
+* `aspectRatio` defaults to 1 for doughnut, pie, polarArea, and radar charts
+* `TimeScale` does not read `t` from object data by default anymore. The default property is `x` or `y`, depending on the orientation. See [data structures](../general/data-structures.md) for details on how to change the default.
 
 #### Defaults
 
 * `global` namespace was removed from `defaults`. So `Chart.defaults.global` is now `Chart.defaults`
 * `default` prefix was removed from defaults. For example `Chart.defaults.global.defaultColor` is now `Chart.defaults.color`
 * `defaultColor` was renamed to `color`
-* `defaultFontColor` was renamed to `fontColor`
-* `defaultFontFamily` was renamed to `fontFamily`
-* `defaultFontSize` was renamed to `fontSize`
-* `defaultFontStyle` was renamed to `fontStyle`
-* `defaultLineHeight` was renamed to `lineHeight`
+* `defaultFontColor` was renamed to `font.color`
+* `defaultFontFamily` was renamed to `font.family`
+* `defaultFontSize` was renamed to `font.size`
+* `defaultFontStyle` was renamed to `font.style`
+* `defaultLineHeight` was renamed to `font.lineHeight`
+* Horizontal Bar default tooltip mode was changed from `'index'` to `'nearest'` to match vertical bar charts
+* `legend`, `title` and `tooltip` namespaces were moved from `Chart.defaults` to `Chart.defaults.plugins`.
 
 #### Scales
 
@@ -82,11 +125,13 @@ options: {
         major: {
           enabled: true
         },
-        fontStyle: function(context) {
-          return context.tick && context.tick.major ? 'bold' : undefined;
-        },
-        fontColor: function(context) {
-          return context.tick && context.tick.major ? '#FF0000' : undefined;
+        font: function(context) {
+          if (context.tick && context.tick.major) {
+            return {
+              style: 'bold',
+              color: '#FF0000'
+            };
+          }
         }
       }
     }],
@@ -118,11 +163,13 @@ options: {
         major: {
           enabled: true
         },
-        fontStyle: function(context) {
-          return context.tick && context.tick.major ? 'bold' : undefined;
-        },
-        fontColor: function(context) {
-          return context.tick && context.tick.major ? '#FF0000' : undefined;
+        font: function(context) {
+          if (context.tick && context.tick.major) {
+            return {
+              style: 'bold',
+              color: '#FF0000'
+            };
+          }
         }
       }
     },
@@ -137,10 +184,12 @@ options: {
 }
 ```
 
+* The time scale option `distribution: 'series'` was removed and a new scale type `timeseries` was introduced in its place
+* In the time scale, `autoSkip` is now enabled by default for consistency with the other scales
+
 #### Animations
 
-Animation system was completely rewritten in Chart.js v3. Each property can now be animated separately. Please see [animations](../configuration/animations.md) docs for details.
-
+Animation system was completely rewritten in Chart.js v3. Each property can now be animated separately. Please see [animations](../configuration/animations.mdx) docs for details.
 
 #### Customizability
 
@@ -154,6 +203,8 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 * `{mode: 'single'}` was replaced with `{mode: 'nearest', intersect: true}`
 * `modes['X-axis']` was replaced with `{mode: 'index', intersect: false}`
 * `options.onClick` is now limited to the chart area
+* `options.onClick` and `options.onHover` now receive the `chart` instance as a 3rd argument
+* `options.onHover` now receives a wrapped `event` as the first parameter. The previous first parameter value is accessible via `event.native`.
 
 #### Ticks
 
@@ -162,31 +213,71 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 
 #### Tooltip
 
-* `xLabel` and `yLabel` were removed. Please use `index` and `value`
+* `xLabel` and `yLabel` were removed. Please use `label` and `formattedValue`
+* The `filter` option will now be passed additional parameters when called and should have the method signature `function(tooltipItem, index, tooltipItems, data)`
+* The `custom` callback now takes a context object that has `tooltip` and `chart` properties
+* All properties of tooltip model related to the tooltip options have been moved to reside within the `options` property.
+* The callbacks no longer are given a `data` parameter. The tooltip item parameter contains the chart and dataset instead
+* The tooltip item's `index` parameter was renamed to `dataIndex` and `value` was renamed to `formattedValue`
 
 ## Developer migration
+
+While the end-user migration for Chart.js 3 is fairly straight-forward, the developer migration can be more complicated. Please reach out for help in the #dev [Slack](https://chartjs-slack.herokuapp.com/) channel if tips on migrating would be helpful.
+
+Some of the biggest things that have changed:
+
+* There is a completely rewritten and more performant animation system.
+  * `Element._model` and `Element._view` are no longer used and properties are now set directly on the elements. You will have to use the method `getProps` to access these properties inside most methods such as `inXRange`/`inYRange` and `getCenterPoint`. Please take a look at [the Chart.js-provided elements](https://github.com/chartjs/Chart.js/tree/master/src/elements) for examples.
+  * When building the elements in a controller, it's now suggested to call `updateElement` to provide the element properties. There are also methods such as `getSharedOptions` and `includeOptions` that have been added to skip redundant computation. Please take a look at [the Chart.js-provided controllers](https://github.com/chartjs/Chart.js/tree/master/src/controllers) for examples.
+* Scales introduced a new parsing API. This API takes user data and converts it into a more standard format. E.g. it allows users to provide numeric data as a `string` and converts it to a `number` where necessary. Previously this was done on the fly as charts were rendered. Now it's done up front with the ability to skip it for better performance if users provide data in the correct format. If you're using standard data format like `x`/`y` you may not need to do anything. If you're using a custom data format you will have to override some of the parse methods in `core.datasetController.js`. An example can be found in [chartjs-chart-financial](https://github.com/chartjs/chartjs-chart-financial), which uses an `{o, h, l, c}` data format.
+
+A few changes were made to controllers that are more straight-forward, but will affect all controllers:
+
+* Options:
+  * `global` was removed from the defaults namespace as it was unnecessary and sometimes inconsistent
+  * Dataset defaults are now under the chart type options instead of vice-versa. This was not able to be done when introduced in 2.x for backwards compatibility. Fixing it removes the biggest stumbling block that new chart developers encountered
+  * Scale default options need to be updated as described in the end user migration section (e.g. `x` instead of `xAxes` and `y` instead of `yAxes`)
+* `updateElement` was changed to `updateElements` and has a new method signature as described below. This provides performance enhancements such as allowing easier reuse of computations that are common to all elements and reducing the number of function calls
 
 ### Removed
 
 The following properties and methods were removed:
 
 #### Chart
+
+* `Chart.active`
 * `Chart.borderWidth`
 * `Chart.chart.chart`
+* `Chart.Bar`. New charts are created via `new Chart` and providing the appropriate `type` parameter
+* `Chart.Bubble`. New charts are created via `new Chart` and providing the appropriate `type` parameter
+* `Chart.Chart`
 * `Chart.Controller`
+* `Chart.Doughnut`. New charts are created via `new Chart` and providing the appropriate `type` parameter
 * `Chart.innerRadius` now lives on doughnut, pie, and polarArea controllers
+* `Chart.lastActive`
+* `Chart.Legend` was moved to `Chart.plugins.legend._element` and made private
+* `Chart.Line`. New charts are created via `new Chart` and providing the appropriate `type` parameter
+* `Chart.LinearScaleBase` now must be imported and cannot be accessed off the `Chart` object
 * `Chart.offsetX`
 * `Chart.offsetY`
 * `Chart.outerRadius` now lives on doughnut, pie, and polarArea controllers
+* `Chart.plugins` was replaced with `Chart.registry`. Plugin defaults are now in `Chart.defaults.plugins[id]`.
+* `Chart.PolarArea`. New charts are created via `new Chart` and providing the appropriate `type` parameter
 * `Chart.prototype.generateLegend`
 * `Chart.platform`. It only contained `disableCSSInjection`. CSS is never injected in v3.
+* `Chart.PluginBase`
+* `Chart.Radar`. New charts are created via `new Chart` and providing the appropriate `type` parameter
 * `Chart.radiusLength`
+* `Chart.scaleService` was replaced with `Chart.registry`. Scale defaults are now in `Chart.defaults.scales[type]`.
+* `Chart.Scatter`. New charts are created via `new Chart` and providing the appropriate `type` parameter
 * `Chart.types`
+* `Chart.Title` was moved to `Chart.plugins.title._element` and made private
 * `Chart.Tooltip` is now provided by the tooltip plugin. The positioners can be accessed from `tooltipPlugin.positioners`
 * `ILayoutItem.minSize`
 
-#### Dataset Controller
+#### Dataset Controllers
 
+* `BarController.getDatasetMeta().bar`
 * `DatasetController.addElementAndReset`
 * `DatasetController.createMetaData`
 * `DatasetController.createMetaDataset`
@@ -204,11 +295,13 @@ The following properties and methods were removed:
 
 * `helpers.addEvent`
 * `helpers.aliasPixel`
+* `helpers.arrayEquals`
 * `helpers.configMerge`
 * `helpers.findIndex`
 * `helpers.findNextWhere`
 * `helpers.findPreviousWhere`
 * `helpers.extend`. Use `Object.assign` instead
+* `helpers.getValueAtIndexOrDefault`. Use `helpers.resolve` instead.
 * `helpers.indexOf`
 * `helpers.lineTo`
 * `helpers.longestText` was moved to the `helpers.canvas` namespace and made private
@@ -230,6 +323,7 @@ The following properties and methods were removed:
 
 #### Scales
 
+* `LinearScaleBase.handleDirectionalChanges`
 * `LogarithmicScale.minNotZero`
 * `Scale.getRightValue`
 * `Scale.longestLabelWidth`
@@ -245,14 +339,20 @@ The following properties and methods were removed:
 
 * `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
 * `Legend.margins` is now private
+* Legend `onClick`, `onHover`, and `onLeave` options now receive the legend as the 3rd argument in addition to implicitly via `this`
+* Legend `onClick`, `onHover`, and `onLeave` options now receive a wrapped `event` as the first parameter. The previous first parameter value is accessible via `event.native`.
 * `Title.margins` is now private
-* The tooltip item's `x` and `y` attributes were removed. Use `datasetIndex` and `index` to get the element and any corresponding data from it
+* The tooltip item's `x` and `y` attributes were replaced by `element`. You can use `element.x` and `element.y` or `element.tooltipPosition()` instead.
 
 #### Removal of private APIs
 
 The following private APIs were removed.
 
 * `Chart.data.datasets[datasetIndex]._meta`
+* `DatasetController._getIndexScaleId`
+* `DatasetController._getIndexScale`
+* `DatasetController._getValueScaleId`
+* `DatasetController._getValueScale`
 * `Element._ctx`
 * `Element._model`
 * `Element._view`
@@ -267,6 +367,9 @@ The following properties were renamed during v3 development:
 
 * `Chart.Animation.animationObject` was renamed to `Chart.Animation`
 * `Chart.Animation.chartInstance` was renamed to `Chart.Animation.chart`
+* `Chart.canvasHelpers` was renamed to `Chart.helpers.canvas`
+* `Chart.layoutService` was renamed to `Chart.layouts`
+* `Chart.pluginService` was renamed to `Chart.plugins`
 * `helpers._decimalPlaces` was renamed to `helpers.math._decimalPlaces`
 * `helpers.almostEquals` was renamed to `helpers.math.almostEquals`
 * `helpers.almostWhole` was renamed to `helpers.math.almostWhole`
@@ -279,7 +382,6 @@ The following properties were renamed during v3 development:
 * `helpers.getMaximumWidth` was renamed to `helpers.dom.getMaximumWidth`
 * `helpers.getRelativePosition` was renamed to `helpers.dom.getRelativePosition`
 * `helpers.getStyle` was renamed to `helpers.dom.getStyle`
-* `helpers.getValueAtIndexOrDefault` was renamed to `helpers.valueAtIndexOrDefault`
 * `helpers.getValueOrDefault` was renamed to `helpers.valueOrDefault`
 * `helpers.easingEffects` was renamed to `helpers.easing.effects`
 * `helpers.log10` was renamed to `helpers.math.log10`
@@ -335,7 +437,6 @@ The APIs listed in this section have changed in signature or behaviour from vers
 
 * `Scale.getLabelForIndex` was replaced by `scale.getLabelForValue`
 * `Scale.getPixelForValue` now has only one parameter. For the `TimeScale` that parameter must be millis since the epoch
-* `ScaleService.registerScaleType` was renamed to `ScaleService.registerScale` and now takes a scale constructors which is expected to have `id` and `defaults` properties.
 
 ##### Ticks
 
@@ -344,6 +445,7 @@ The APIs listed in this section have changed in signature or behaviour from vers
 * `Scale.convertTicksToLabels` was renamed to `generateTickLabels`. It is now expected to set the label property on the ticks given as input
 * `Scale.ticks` now contains objects instead of strings
 * When the `autoSkip` option is enabled, `Scale.ticks` now contains only the non-skipped ticks instead of all ticks.
+* Ticks are now always generated in monotonically increasing order
 
 ##### Time Scale
 
@@ -379,3 +481,4 @@ The APIs listed in this section have changed in signature or behaviour from vers
 * `Chart.platform` is no longer the platform object used by charts. Every chart instance now has a separate platform instance.
 * `Chart.platforms` is an object that contains two usable platform classes, `BasicPlatform` and `DomPlatform`. It also contains `BasePlatform`, a class that all platforms must extend from.
 * If the canvas passed in is an instance of `OffscreenCanvas`, the `BasicPlatform` is automatically used.
+* `isAttached` method was added to platform.

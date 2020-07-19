@@ -2,9 +2,9 @@
 title: Axes
 ---
 
-Axes are an integral part of a chart. They are used to determine how data maps to a pixel value on the chart. In a cartesian chart, there is 1 or more X axis and 1 or more Y axis to map points onto the 2 dimensional canvas. These axes are known as ['cartesian axes'](./cartesian/README.md#cartesian-axes).
+Axes are an integral part of a chart. They are used to determine how data maps to a pixel value on the chart. In a cartesian chart, there is 1 or more X axis and 1 or more Y axis to map points onto the 2 dimensional canvas. These axes are known as ['cartesian axes'](./cartesian/index.md#cartesian-axes).
 
-In a radial chart, such as a radar chart or a polar area chart, there is a single axis that maps points in the angular and radial directions. These are known as ['radial axes'](./radial/README.md#radial-axes).
+In a radial chart, such as a radar chart or a polar area chart, there is a single axis that maps points in the angular and radial directions. These are known as ['radial axes'](./radial/index.md#radial-axes).
 
 Scales in Chart.js >v2.0 are significantly more powerful, but also different than those of v1.0.
 
@@ -15,17 +15,17 @@ Scales in Chart.js >v2.0 are significantly more powerful, but also different tha
 
 ## Common Configuration
 
-The following properties are common to all axes provided by Chart.js.
+The following options are common to all axes provided by Chart.js.
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
-| `display` | <code>boolean&#124;string</code> | `true` | Controls the axis global visibility (visible when `true`, hidden when `false`). When `display: 'auto'`, the axis is visible only if at least one associated dataset is visible.
-| `callbacks` | `object` | | Callback functions to hook into the axis lifecycle. [more...](#callbacks)
+| `display` | `boolean`\|`string` | `true` | Controls the axis global visibility (visible when `true`, hidden when `false`). When `display: 'auto'`, the axis is visible only if at least one associated dataset is visible.
+| `reverse` | `boolean` | `false` | Reverse the scale.
 | `weight` | `number` | `0` | The weight used to sort the axis. Higher weights are further away from the chart area.
 
 ### Callbacks
 
-There are a number of config callbacks that can be used to change parameters in the scale at different points in the update process.
+There are a number of config callbacks that can be used to change parameters in the scale at different points in the update process. The options are supplied at the top level of the axis options.
 
 | Name | Arguments | Description
 | ---- | --------- | -----------
@@ -46,14 +46,12 @@ There are a number of config callbacks that can be used to change parameters in 
 
 ### Updating Axis Defaults
 
-The default configuration for a scale can be easily changed using the scale service. All you need to do is to pass in a partial configuration that will be merged with the current scale default configuration to form the new default.
+The default configuration for a scale can be easily changed. All you need to do is set the new options to `Chart.defaults.scales[type]`.
 
 For example, to set the minimum value of 0 for all linear scales, you would do the following. Any linear scales created after this time would now have a minimum of 0.
 
 ```javascript
-Chart.scaleService.updateScaleDefaults('linear', {
-    min: 0
-});
+Chart.defaults.scales.linear.min = 0;
 ```
 
 ## Creating New Axes
