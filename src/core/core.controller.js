@@ -6,7 +6,7 @@ import layouts from './core.layouts';
 import {BasicPlatform, DomPlatform} from '../platform';
 import PluginService from './core.plugins';
 import registry from './core.registry';
-import {getMaximumWidth, getMaximumHeight, retinaScale} from '../helpers/helpers.dom';
+import {retinaScale} from '../helpers/helpers.dom';
 import {mergeIf, merge, _merger, each, callback as callCallback, uid, valueOrDefault, _elementsEqual} from '../helpers/helpers.core';
 import {clear as canvasClear, clipArea, unclipArea, _isPointInArea} from '../helpers/helpers.canvas';
 // @ts-ignore
@@ -44,8 +44,8 @@ function mergeScaleConfig(config, options) {
 	const chartDefaults = defaults[config.type] || {scales: {}};
 	const configScales = options.scales || {};
 	const chartIndexAxis = getIndexAxis(config.type, options);
-	const firstIDs = {};
-	const scales = {};
+	const firstIDs = Object.create(null);
+	const scales = Object.create(null);
 
 	// First figure out first scale id's per axis.
 	Object.keys(configScales).forEach(id => {
@@ -53,12 +53,12 @@ function mergeScaleConfig(config, options) {
 		const axis = determineAxis(id, scaleConf);
 		const defaultId = getDefaultScaleIDFromAxis(axis, chartIndexAxis);
 		firstIDs[axis] = firstIDs[axis] || id;
-		scales[id] = mergeIf({axis}, [scaleConf, chartDefaults.scales[axis], chartDefaults.scales[defaultId]]);
+		scales[id] = mergeIf(Object.create(null), [{axis}, scaleConf, chartDefaults.scales[axis], chartDefaults.scales[defaultId]]);
 	});
 
 	// Backward compatibility
 	if (options.scale) {
-		scales[options.scale.id || 'r'] = mergeIf({axis: 'r'}, [options.scale, chartDefaults.scales.r]);
+		scales[options.scale.id || 'r'] = mergeIf(Object.create(null), [{axis: 'r'}, options.scale, chartDefaults.scales.r]);
 		firstIDs.r = firstIDs.r || options.scale.id || 'r';
 	}
 
@@ -71,7 +71,7 @@ function mergeScaleConfig(config, options) {
 		Object.keys(defaultScaleOptions).forEach(defaultID => {
 			const axis = getAxisFromDefaultScaleID(defaultID, indexAxis);
 			const id = dataset[axis + 'AxisID'] || firstIDs[axis] || axis;
-			scales[id] = scales[id] || {};
+			scales[id] = scales[id] || Object.create(null);
 			mergeIf(scales[id], [{axis}, configScales[id], defaultScaleOptions[defaultID]]);
 		});
 	});
@@ -91,7 +91,7 @@ function mergeScaleConfig(config, options) {
  * a deep copy of the result, thus doesn't alter inputs.
  */
 function mergeConfig(...args/* config objects ... */) {
-	return merge({}, args, {
+	return merge(Object.create(null), args, {
 		merger(key, target, source, options) {
 			if (key !== 'scales' && key !== 'scale') {
 				_merger(key, target, source, options);
@@ -116,10 +116,25 @@ function initConfig(config) {
 		defaults[config.type],
 		config.options || {});
 
+	options.hover = merge(Object.create(null), [
+		defaults.interaction,
+		defaults.hover,
+		options.interaction,
+		options.hover
+	]);
+
 	options.scales = scaleConfig;
 
-	options.title = (options.title !== false) && merge({}, [defaults.plugins.title, options.title]);
-	options.tooltips = (options.tooltips !== false) && merge({}, [defaults.plugins.tooltip, options.tooltips]);
+	options.title = (options.title !== false) && merge(Object.create(null), [
+		defaults.plugins.title,
+		options.title
+	]);
+	options.tooltips = (options.tooltips !== false) && merge(Object.create(null), [
+		defaults.interaction,
+		defaults.plugins.tooltip,
+		options.interaction,
+		options.tooltips
+	]);
 
 	return config;
 }
@@ -177,18 +192,18 @@ function compare2Level(l1, l2) {
 	};
 }
 
-function onAnimationsComplete(ctx) {
-	const chart = ctx.chart;
+function onAnimationsComplete(context) {
+	const chart = context.chart;
 	const animationOptions = chart.options.animation;
 
 	chart._plugins.notify(chart, 'afterRender');
-	callCallback(animationOptions && animationOptions.onComplete, [ctx], chart);
+	callCallback(animationOptions && animationOptions.onComplete, [context], chart);
 }
 
-function onAnimationProgress(ctx) {
-	const chart = ctx.chart;
+function onAnimationProgress(context) {
+	const chart = context.chart;
 	const animationOptions = chart.options.animation;
-	callCallback(animationOptions && animationOptions.onProgress, [ctx], chart);
+	callCallback(animationOptions && animationOptions.onProgress, [context], chart);
 }
 
 function isDomSupported() {
@@ -202,7 +217,7 @@ function isDomSupported() {
 function getCanvas(item) {
 	if (isDomSupported() && typeof item === 'string') {
 		item = document.getElementById(item);
-	} else if (item.length) {
+	} else if (item && item.length) {
 		// Support for array based queries (such as jQuery)
 		item = item[0];
 	}
@@ -214,22 +229,6 @@ function getCanvas(item) {
 	return item;
 }
 
-function computeNewSize(canvas, width, height, aspectRatio) {
-	if (width === undefined || height === undefined) {
-		width = getMaximumWidth(canvas);
-		height = getMaximumHeight(canvas);
-	}
-	// the canvas render width and height will be casted to integers so make sure that
-	// the canvas display style uses the same integer values to avoid blurring effect.
-
-	// Minimum values set to 0 instead of canvas.size because the size defaults to 300x150 if the element is collapsed
-	width = Math.max(0, Math.floor(width));
-	return {
-		width,
-		height: Math.max(0, Math.floor(aspectRatio ? width / aspectRatio : height))
-	};
-}
-
 class Chart {
 
 	// eslint-disable-next-line max-statements
@@ -238,6 +237,14 @@ class Chart {
 
 		config = initConfig(config);
 		const initialCanvas = getCanvas(item);
+		const existingChart = Chart.getChart(initialCanvas);
+		if (existingChart) {
+			throw new Error(
+				'Canvas is already in use. Chart with ID \'' + existingChart.id + '\'' +
+				' must be destroyed before the canvas can be reused.'
+			);
+		}
+
 		this.platform = me._initializePlatform(initialCanvas, config);
 
 		const context = me.platform.acquireContext(initialCanvas, config);
@@ -355,7 +362,7 @@ class Chart {
 		const options = me.options;
 		const canvas = me.canvas;
 		const aspectRatio = options.maintainAspectRatio && me.aspectRatio;
-		const newSize = computeNewSize(canvas, width, height, aspectRatio);
+		const newSize = me.platform.getMaximumSize(canvas, width, height, aspectRatio);
 
 		// detect devicePixelRation changes
 		const oldRatio = me.currentDevicePixelRatio;
@@ -608,11 +615,9 @@ class Chart {
 		me._updateLayout();
 
 		// Can only reset the new controllers after the scales have been updated
-		if (me.options.animation) {
-			each(newControllers, (controller) => {
-				controller.reset();
-			});
-		}
+		each(newControllers, (controller) => {
+			controller.reset();
+		});
 
 		me._updateDatasets(mode);
 
@@ -703,14 +708,9 @@ class Chart {
 
 	render() {
 		const me = this;
-		const animationOptions = me.options.animation;
 		if (me._plugins.notify(me, 'beforeRender') === false) {
 			return;
 		}
-		const onComplete = function() {
-			me._plugins.notify(me, 'afterRender');
-			callCallback(animationOptions && animationOptions.onComplete, [], me);
-		};
 
 		if (animator.has(me)) {
 			if (me.attached && !animator.running(me)) {
@@ -718,7 +718,7 @@ class Chart {
 			}
 		} else {
 			me.draw();
-			onComplete();
+			onAnimationsComplete({chart: me});
 		}
 	}
 
@@ -834,22 +834,6 @@ class Chart {
 		me._plugins.notify(me, 'afterDatasetDraw', [args]);
 	}
 
-	/**
-	 * Get the single element that was clicked on
-	 * @return An object containing the dataset index and element index of the matching element. Also contains the rectangle that was draw
-	 */
-	getElementAtEvent(e) {
-		return Interaction.modes.nearest(this, e, {intersect: true});
-	}
-
-	getElementsAtEvent(e) {
-		return Interaction.modes.index(this, e, {intersect: true});
-	}
-
-	getElementsAtXAxis(e) {
-		return Interaction.modes.index(this, e, {intersect: false});
-	}
-
 	getElementsAtEventForMode(e, mode, options, useFinalPosition) {
 		const method = Interaction.modes[mode];
 		if (typeof method === 'function') {
@@ -857,10 +841,6 @@ class Chart {
 		}
 
 		return [];
-	}
-
-	getDatasetAtEvent(e) {
-		return Interaction.modes.dataset(this, e, {intersect: true});
 	}
 
 	getDatasetMeta(datasetIndex) {
@@ -1000,7 +980,9 @@ class Chart {
 			}
 		};
 
-		let listener = function(e) {
+		let listener = function(e, x, y) {
+			e.offsetX = x;
+			e.offsetY = y;
 			me._eventHandler(e);
 		};
 
@@ -1017,8 +999,8 @@ class Chart {
 			const attached = () => {
 				_remove('attach', attached);
 
-				me.resize();
 				me.attached = true;
+				me.resize();
 
 				_add('resize', listener);
 				_add('detach', detached);
@@ -1071,6 +1053,41 @@ class Chart {
 			if (item) {
 				this.getDatasetMeta(item.datasetIndex).controller[prefix + 'HoverStyle'](item.element, item.datasetIndex, item.index);
 			}
+		}
+	}
+
+	/**
+	 * Get active (hovered) elements
+	 * @returns array
+	 */
+	getActiveElements() {
+		return this._active || [];
+	}
+
+	/**
+	 * Set active (hovered) elements
+	 * @param {array} activeElements New active data points
+	 */
+	setActiveElements(activeElements) {
+		const me = this;
+		const lastActive = me._active || [];
+		const active = activeElements.map(({datasetIndex, index}) => {
+			const meta = me.getDatasetMeta(datasetIndex);
+			if (!meta) {
+				throw new Error('No dataset found at index ' + datasetIndex);
+			}
+
+			return {
+				datasetIndex,
+				element: meta.data[index],
+				index,
+			};
+		});
+		const changed = !_elementsEqual(active, lastActive);
+
+		if (changed) {
+			me._active = active;
+			me._updateHoverStyles(active, lastActive);
 		}
 	}
 
@@ -1128,7 +1145,7 @@ class Chart {
 		// If the event is replayed from `update`, we should evaluate with the final positions.
 		//
 		// The `replay`:
-		// It's the last event (excluding click) that has occured before `update`.
+		// It's the last event (excluding click) that has occurred before `update`.
 		// So mouse has not moved. It's also over the chart, because there is a `replay`.
 		//
 		// The why:
@@ -1154,7 +1171,7 @@ class Chart {
 		// Invoke onHover hook
 		callCallback(options.onHover || options.hover.onHover, [e, active, me], me);
 
-		if (e.type === 'mouseup' || e.type === 'click') {
+		if (e.type === 'mouseup' || e.type === 'click' || e.type === 'contextmenu') {
 			if (_isPointInArea(e, me.chartArea)) {
 				callCallback(options.onClick, [e, active, me], me);
 			}
@@ -1175,6 +1192,11 @@ Chart.defaults = defaults;
 Chart.instances = {};
 Chart.registry = registry;
 Chart.version = version;
+
+Chart.getChart = (key) => {
+	const canvas = getCanvas(key);
+	return Object.values(Chart.instances).filter((c) => c.canvas === canvas).pop();
+};
 
 // @ts-ignore
 const invalidatePlugins = () => each(Chart.instances, (chart) => chart._plugins.invalidate());

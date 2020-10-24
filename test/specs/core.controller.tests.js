@@ -10,6 +10,33 @@ describe('Chart', function() {
 		expect(chart instanceof Chart).toBeTruthy();
 	});
 
+	it('should throw an error if the canvas is already in use', function() {
+		var config = {
+			type: 'line',
+			data: {
+				datasets: [{
+					data: [1, 2, 3, 4]
+				}],
+				labels: ['A', 'B', 'C', 'D']
+			}
+		};
+		var chart = acquireChart(config);
+		var canvas = chart.canvas;
+
+		function createChart() {
+			return new Chart(canvas, config);
+		}
+
+		expect(createChart).toThrow(new Error(
+			'Canvas is already in use. ' +
+			'Chart with ID \'' + chart.id + '\'' +
+			' must be destroyed before the canvas can be reused.'
+		));
+
+		chart.destroy();
+		expect(createChart).not.toThrow();
+	});
+
 	describe('config initialization', function() {
 		it('should create missing config.data properties', function() {
 			var chart = acquireChart({});
@@ -62,13 +89,14 @@ describe('Chart', function() {
 			expect(chart.data.datasets[0].data).toEqual([10, 11, 12]);
 		});
 
-		it('should initialize config with default options', function() {
+		it('should initialize config with default interaction options', function() {
 			var callback = function() {};
 			var defaults = Chart.defaults;
+			var defaultMode = defaults.line.interaction.mode;
 
 			defaults.hover.onHover = callback;
 			defaults.line.spanGaps = true;
-			defaults.line.hover.mode = 'x-axis';
+			defaults.line.interaction.mode = 'test';
 
 			var chart = acquireChart({
 				type: 'line'
@@ -76,14 +104,38 @@ describe('Chart', function() {
 
 			var options = chart.options;
 			expect(options.font.size).toBe(defaults.font.size);
-			expect(options.showLines).toBe(defaults.line.showLines);
+			expect(options.showLine).toBe(defaults.line.showLine);
 			expect(options.spanGaps).toBe(true);
 			expect(options.hover.onHover).toBe(callback);
-			expect(options.hover.mode).toBe('x-axis');
+			expect(options.hover.mode).toBe('test');
 
 			defaults.hover.onHover = null;
 			defaults.line.spanGaps = false;
-			defaults.line.hover.mode = 'index';
+			defaults.line.interaction.mode = defaultMode;
+		});
+
+		it('should initialize config with default hover options', function() {
+			var callback = function() {};
+			var defaults = Chart.defaults;
+
+			defaults.hover.onHover = callback;
+			defaults.line.spanGaps = true;
+			defaults.line.hover.mode = 'test';
+
+			var chart = acquireChart({
+				type: 'line'
+			});
+
+			var options = chart.options;
+			expect(options.font.size).toBe(defaults.font.size);
+			expect(options.showLine).toBe(defaults.line.showLine);
+			expect(options.spanGaps).toBe(true);
+			expect(options.hover.onHover).toBe(callback);
+			expect(options.hover.mode).toBe('test');
+
+			defaults.hover.onHover = null;
+			defaults.line.spanGaps = false;
+			delete defaults.line.hover.mode;
 		});
 
 		it('should override default options', function() {
@@ -108,13 +160,13 @@ describe('Chart', function() {
 			});
 
 			var options = chart.options;
-			expect(options.showLines).toBe(defaults.showLines);
+			expect(options.showLine).toBe(defaults.showLine);
 			expect(options.spanGaps).toBe(false);
 			expect(options.hover.mode).toBe('dataset');
 			expect(options.title.position).toBe('bottom');
 
 			defaults.hover.onHover = null;
-			defaults.line.hover.mode = 'index';
+			delete defaults.line.hover.mode;
 			defaults.line.spanGaps = false;
 		});
 
@@ -637,12 +689,15 @@ describe('Chart', function() {
 				dw: 0, dh: 0,
 				rw: 0, rh: 0,
 			});
+			expect(chart.chartArea).toBeUndefined();
 
 			waitForResize(chart, function() {
 				expect(chart).toBeChartOfSize({
 					dw: 455, dh: 355,
 					rw: 455, rh: 355,
 				});
+
+				expect(chart.chartArea).not.toBeUndefined();
 
 				body.removeChild(wrapper);
 				chart.destroy();
@@ -1435,6 +1490,81 @@ describe('Chart', function() {
 
 			chart.update();
 			expect(chart.getDataVisibility(1)).toBe(false);
+		});
+	});
+
+	describe('getChart', function() {
+		it('should get the chart from the canvas ID', function() {
+			var chart = acquireChart({
+				type: 'pie',
+				data: {
+					datasets: [{
+						data: [1, 2, 3]
+					}]
+				}
+			});
+			chart.canvas.id = 'myID';
+
+			expect(Chart.getChart('myID')).toBe(chart);
+		});
+
+		it('should get the chart from an HTMLCanvasElement', function() {
+			var chart = acquireChart({
+				type: 'pie',
+				data: {
+					datasets: [{
+						data: [1, 2, 3]
+					}]
+				}
+			});
+			expect(Chart.getChart(chart.canvas)).toBe(chart);
+		});
+
+		it('should get the chart from an CanvasRenderingContext2D', function() {
+			var chart = acquireChart({
+				type: 'pie',
+				data: {
+					datasets: [{
+						data: [1, 2, 3]
+					}]
+				}
+			});
+			expect(Chart.getChart(chart.ctx)).toBe(chart);
+		});
+
+		it('should return undefined when a chart is not found or bad data is provided', function() {
+			expect(Chart.getChart(1)).toBeUndefined();
+		});
+	});
+
+	describe('active elements', function() {
+		it('should set the active elements', function() {
+			var chart = acquireChart({
+				type: 'pie',
+				data: {
+					datasets: [{
+						data: [1, 2, 3],
+						borderColor: 'red',
+						hoverBorderColor: 'blue',
+					}]
+				}
+			});
+
+			const meta = chart.getDatasetMeta(0);
+			let props = meta.data[0].getProps(['borderColor']);
+			expect(props.options.borderColor).toEqual('red');
+
+			chart.setActiveElements([{
+				datasetIndex: 0,
+				index: 0,
+			}]);
+
+			props = meta.data[0].getProps(['borderColor']);
+			expect(props.options.borderColor).toEqual('blue');
+
+			const active = chart.getActiveElements();
+			expect(active.length).toEqual(1);
+			expect(active[0].element).toBe(meta.data[0]);
 		});
 	});
 });

@@ -2,13 +2,13 @@
 title: Linear Radial Axis
 ---
 
-The linear radial scale is used to chart numerical data. As the name suggests, linear interpolation is used to determine where a value lies in relation the center of the axis.
+The linear radial scale is used to chart numerical data. As the name suggests, linear interpolation is used to determine where a value lies in relation to the center of the axis.
 
 The following additional configuration options are provided by the radial linear scale.
 
 ## Configuration Options
 
-The axis has configuration properties for ticks, angle lines (line that appear in a radar chart outward from the center), pointLabels (labels around the edge in a radar chart). The following sections define each of the properties in those sections.
+The axis has configuration properties for ticks, angle lines (lines that appear in a radar chart outward from the center), pointLabels (labels around the edge in a radar chart). The following sections define each of the properties in those sections.
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
@@ -24,7 +24,7 @@ The axis has configuration properties for ticks, angle lines (line that appear i
 
 ## Tick Options
 
-The following options are provided by the linear radial scale. They are all located in the `ticks` sub options. The [common tick configuration](../styling.md#tick-configuration) options are supported by this axis.
+The following options are provided by the linear radial scale. They are all located in the `ticks` sub-options. The [common tick configuration](../styling.md#tick-configuration) options are supported by this axis.
 
 | Name | Type | Scriptable | Default | Description
 | ---- | ---- | ------- | ------- | -----------
@@ -133,10 +133,10 @@ The following options are used to configure the point labels that are shown on t
 | ---- | ---- | ------- | ------- | -----------
 | `display` | `boolean` | | `true` | if true, point labels are shown.
 | `callback` | `function` | | | Callback function to transform data labels to point labels. The default implementation simply returns the current string.
-| `font` | `Font` | Yes | `defaults.font` | See [Fonts](../general/fonts.md)
+| `font` | `Font` | Yes | `defaults.font` | See [Fonts](./general/fonts.md)
 
 The scriptable context is the same as for the [Angle Line Options](#angle-line-options).
 
 ## Internal data format
 
-Internally linear radial scale uses numeric data
+Internally, the linear radial scale uses numeric data

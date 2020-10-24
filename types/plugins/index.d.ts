@@ -1,7 +1,7 @@
-import { Chart, Element, IAnimationSpecContainer, InteractionMode, LayoutPosition, IPlugin } from '../core';
-import { Color, IChartArea, IFontSpec, Scriptable, TextAlign, IEvent } from '../core/interfaces';
+import { ActiveDataPoint, ActiveElement, Chart, Element, IAnimationSpecContainer, InteractionMode, LayoutPosition, IPlugin } from '../core';
+import { Color, IChartArea, IFontSpec, Scriptable, TextAlign, IEvent, IHoverInteractionOptions } from '../core/interfaces';
 import { PointStyle } from '../elements';
-import { IChartData } from '../interfaces';
+import { IChartData, IChartDataset } from '../interfaces';
 
 export const Filler: IPlugin;
 
@@ -9,7 +9,7 @@ export interface IFillerOptions {
   propagate: boolean;
 }
 
-export type FillTarget = number | string | 'start' | 'end' | 'origin' | false;
+export type FillTarget = number | string | { value: number } | 'start' | 'end' | 'origin' | 'stack' | false;
 
 export interface IFillTarget {
   /**
@@ -166,6 +166,11 @@ export interface ILegendOptions {
     filter(item: ILegendItem, data: IChartData): boolean;
 
     /**
+     * Sorts the legend items
+     */
+    sort(a: ILegendItem, b: ILegendItem, data: IChartData): number;
+
+    /**
      * Label style will match corresponding point style (size is based on the mimimum value between boxWidth and font.size).
      * @default false
      */
@@ -229,13 +234,15 @@ export interface ITitleChartOptions {
   title: ITitleOptions;
 }
 
+export type TooltipAlignment = 'start' | 'center' | 'end';
+
 export interface TooltipModel {
   // The items that we are rendering in the tooltip. See Tooltip Item Interface section
   dataPoints: ITooltipItem[];
 
   // Positioning
-  xAlign: 'start' | 'center' | 'end';
-  yAlign: 'start' | 'center' | 'end';
+  xAlign: TooltipAlignment;
+  yAlign: TooltipAlignment;
 
   // X and Y properties are the top left of the tooltip
   x: number;
@@ -281,6 +288,9 @@ export const Tooltip: IPlugin & {
   readonly positioners: {
     [key: string]: (items: readonly Element[], eventPosition: { x: number; y: number }) => { x: number; y: number };
   };
+
+  getActiveElements(): ActiveElement[];
+  setActiveElements(active: ActiveDataPoint[], eventPosition: { x: number, y: number });
 };
 
 export interface ITooltipCallbacks {
@@ -325,7 +335,7 @@ export interface ITooltipPlugin<O = {}> {
   afterTooltipDraw?(chart: Chart, args: { tooltip: TooltipModel }, options: O): void;
 }
 
-export interface ITooltipOptions {
+export interface ITooltipOptions extends IHoverInteractionOptions {
   /**
    * Are on-canvas tooltips enabled?
    * @default true
@@ -336,17 +346,15 @@ export interface ITooltipOptions {
    */
   custom(this: TooltipModel, args: { chart: Chart; tooltip: TooltipModel }): void;
   /**
-   * Sets which elements appear in the tooltip.
-   */
-  mode: InteractionMode;
-  /**
    * The mode for positioning the tooltip
    */
   position: 'average' | 'nearest';
+
   /**
-   * If true, the tooltip mode applies only when the mouse position intersects with an element. If false, the mode will be applied at all times.
+   * Override the tooltip alignment calculations
    */
-  intersect: boolean;
+  xAlign: TooltipAlignment;
+  yAlign: TooltipAlignment;
 
   /**
    * Sort tooltip items.
@@ -514,7 +522,7 @@ export interface ITooltipItem {
   /**
    * The dataset the item comes from
    */
-  dataset: object;
+  dataset: IChartDataset;
 
   /**
    * Index of the dataset the item comes from

@@ -1,24 +1,43 @@
 import DatasetController from '../core/core.datasetController';
-import {clipArea, unclipArea} from '../helpers/helpers.canvas';
-import {isArray, isNullOrUndef, valueOrDefault, resolveObjectKey} from '../helpers/helpers.core';
-import {_limitValue, sign} from '../helpers/helpers.math';
+import {
+	clipArea, unclipArea, _arrayUnique, isArray, isNullOrUndef,
+	valueOrDefault, resolveObjectKey, _limitValue, sign
+} from '../helpers';
+
+function getAllScaleValues(scale) {
+	if (!scale._cache.$bar) {
+		const metas = scale.getMatchingVisibleMetas('bar');
+		let values = [];
+
+		for (let i = 0, ilen = metas.length; i < ilen; i++) {
+			values = values.concat(metas[i].controller.getAllParsedValues(scale));
+		}
+		scale._cache.$bar = _arrayUnique(values.sort((a, b) => a - b));
+	}
+	return scale._cache.$bar;
+}
 
 /**
  * Computes the "optimal" sample size to maintain bars equally sized while preventing overlap.
  * @private
  */
-function computeMinSampleSize(scale, pixels) {
+function computeMinSampleSize(scale) {
+	const values = getAllScaleValues(scale);
 	let min = scale._length;
-	let prev, curr, i, ilen;
+	let i, ilen, curr, prev;
+	const updateMinAndPrev = () => {
+		min = Math.min(min, i && Math.abs(curr - prev) || min);
+		prev = curr;
+	};
 
-	for (i = 1, ilen = pixels.length; i < ilen; ++i) {
-		min = Math.min(min, Math.abs(pixels[i] - pixels[i - 1]));
+	for (i = 0, ilen = values.length; i < ilen; ++i) {
+		curr = scale.getPixelForValue(values[i]);
+		updateMinAndPrev();
 	}
 
 	for (i = 0, ilen = scale.ticks.length; i < ilen; ++i) {
 		curr = scale.getPixelForTick(i);
-		min = i > 0 ? Math.min(min, Math.abs(curr - prev)) : min;
-		prev = curr;
+		updateMinAndPrev();
 	}
 
 	return min;
@@ -30,9 +49,8 @@ function computeMinSampleSize(scale, pixels) {
  * mode currently always generates bars equally sized (until we introduce scriptable options?).
  * @private
  */
-function computeFitCategoryTraits(index, ruler, options) {
+function computeFitCategoryTraits(index, ruler, options, stackCount) {
 	const thickness = options.barThickness;
-	const count = ruler.stackCount;
 	let size, ratio;
 
 	if (isNullOrUndef(thickness)) {
@@ -42,12 +60,12 @@ function computeFitCategoryTraits(index, ruler, options) {
 		// When bar thickness is enforced, category and bar percentages are ignored.
 		// Note(SB): we could add support for relative bar thickness (e.g. barThickness: '50%')
 		// and deprecate barPercentage since this value is ignored when thickness is absolute.
-		size = thickness * count;
+		size = thickness * stackCount;
 		ratio = 1;
 	}
 
 	return {
-		chunk: size / count,
+		chunk: size / stackCount,
 		ratio,
 		start: ruler.pixels[index] - (size / 2)
 	};
@@ -59,7 +77,7 @@ function computeFitCategoryTraits(index, ruler, options) {
  * generates bars with different widths when data are not evenly spaced.
  * @private
  */
-function computeFlexCategoryTraits(index, ruler, options) {
+function computeFlexCategoryTraits(index, ruler, options, stackCount) {
 	const pixels = ruler.pixels;
 	const curr = pixels[index];
 	let prev = index > 0 ? pixels[index - 1] : null;
@@ -81,7 +99,7 @@ function computeFlexCategoryTraits(index, ruler, options) {
 	const size = Math.abs(next - prev) / 2 * percent;
 
 	return {
-		chunk: size / ruler.stackCount,
+		chunk: size / stackCount,
 		ratio: options.barPercentage,
 		start
 	};
@@ -219,6 +237,7 @@ export default class BarController extends DatasetController {
 
 	initialize() {
 		const me = this;
+		me.enableOptionSharing = true;
 
 		super.initialize();
 
@@ -230,10 +249,10 @@ export default class BarController extends DatasetController {
 		const me = this;
 		const meta = me._cachedMeta;
 
-		me.updateElements(meta.data, 0, mode);
+		me.updateElements(meta.data, 0, meta.data.length, mode);
 	}
 
-	updateElements(rectangles, start, mode) {
+	updateElements(bars, start, count, mode) {
 		const me = this;
 		const reset = mode === 'reset';
 		const vscale = me._cachedMeta.vScale;
@@ -241,16 +260,15 @@ export default class BarController extends DatasetController {
 		const horizontal = vscale.isHorizontal();
 		const ruler = me._getRuler();
 		const firstOpts = me.resolveDataElementOptions(start, mode);
-		const sharedOptions = me.getSharedOptions(mode, rectangles[start], firstOpts);
+		const sharedOptions = me.getSharedOptions(firstOpts);
 		const includeOptions = me.includeOptions(mode, sharedOptions);
 
-		let i;
+		me.updateSharedOptions(sharedOptions, mode, firstOpts);
 
-		for (i = 0; i < rectangles.length; i++) {
-			const index = start + i;
-			const options = me.resolveDataElementOptions(index, mode);
-			const vpixels = me._calculateBarValuePixels(index, options);
-			const ipixels = me._calculateBarIndexPixels(index, ruler, options);
+		for (let i = start; i < start + count; i++) {
+			const options = sharedOptions || me.resolveDataElementOptions(i, mode);
+			const vpixels = me._calculateBarValuePixels(i, options);
+			const ipixels = me._calculateBarIndexPixels(i, ruler, options);
 
 			const properties = {
 				horizontal,
@@ -261,28 +279,21 @@ export default class BarController extends DatasetController {
 				width: horizontal ? undefined : ipixels.size
 			};
 
-			// all borders are drawn for floating bar
-			/* TODO: float bars border skipping magic
-			if (me.getParsed(i)._custom) {
-				model.borderSkipped = null;
-			}
-			*/
 			if (includeOptions) {
 				properties.options = options;
 			}
-			me.updateElement(rectangles[i], index, properties, mode);
+			me.updateElement(bars[i], i, properties, mode);
 		}
-
-		me.updateSharedOptions(sharedOptions, mode);
 	}
 
 	/**
 	 * Returns the stacks based on groups and bar visibility.
 	 * @param {number} [last] - The dataset index
+	 * @param {number} [dataIndex] - The data index of the ruler
 	 * @returns {string[]} The list of stack IDs
 	 * @private
 	 */
-	_getStacks(last) {
+	_getStacks(last, dataIndex) {
 		const me = this;
 		const meta = me._cachedMeta;
 		const iScale = meta.iScale;
@@ -294,6 +305,17 @@ export default class BarController extends DatasetController {
 
 		for (i = 0; i < ilen; ++i) {
 			item = metasets[i];
+
+			if (typeof dataIndex !== 'undefined') {
+				const val = item.controller.getParsed(dataIndex)[
+					item.controller._cachedMeta.vScale.axis
+				];
+
+				if (isNullOrUndef(val) || isNaN(val)) {
+					continue;
+				}
+			}
+
 			// stacked   | meta.stack
 			//           | found | not found | undefined
 			// false     |   x   |     x     |     x
@@ -322,8 +344,8 @@ export default class BarController extends DatasetController {
 	 * Returns the effective number of stacks based on groups and bar visibility.
 	 * @private
 	 */
-	_getStackCount() {
-		return this._getStacks().length;
+	_getStackCount(index) {
+		return this._getStacks(undefined, index).length;
 	}
 
 	/**
@@ -362,7 +384,7 @@ export default class BarController extends DatasetController {
 		// only if the barThickness option is defined
 		// Since a scriptable option may return null or undefined that
 		// means the option would have to be of type number
-		const min = computeMinSampleSize(iScale, pixels);
+		const min = computeMinSampleSize(iScale);
 
 		return {
 			min,
@@ -382,9 +404,10 @@ export default class BarController extends DatasetController {
 		const me = this;
 		const meta = me._cachedMeta;
 		const vScale = meta.vScale;
-		const minBarLength = options.minBarLength;
+		const {base: baseValue, minBarLength} = options;
 		const parsed = me.getParsed(index);
 		const custom = parsed._custom;
+		const floating = isFloatBar(custom);
 		let value = parsed[vScale.axis];
 		let start = 0;
 		let length = meta._stacked ? me.applyStack(vScale, parsed) : value;
@@ -395,7 +418,7 @@ export default class BarController extends DatasetController {
 			length = value;
 		}
 
-		if (isFloatBar(custom)) {
+		if (floating) {
 			value = custom.barStart;
 			length = custom.barEnd - custom.barStart;
 			// bars crossing origin are not stacked
@@ -409,11 +432,18 @@ export default class BarController extends DatasetController {
 		// So we don't try to draw so huge rectangles.
 		// https://github.com/chartjs/Chart.js/issues/5247
 		// TODO: use borderWidth instead (need to move the parsing from rectangle)
-		let base = _limitValue(vScale.getPixelForValue(start),
+		const startValue = !isNullOrUndef(baseValue) && !floating ? baseValue : start;
+		let base = _limitValue(vScale.getPixelForValue(startValue),
 			vScale._startPixel - 10,
 			vScale._endPixel + 10);
 
-		head = vScale.getPixelForValue(start + length);
+		if (this.chart.getDataVisibility(index)) {
+			head = vScale.getPixelForValue(start + length);
+		} else {
+			// When not visible, no height
+			head = base;
+		}
+
 		size = head - base;
 
 		if (minBarLength !== undefined && Math.abs(size) < minBarLength) {
@@ -437,9 +467,10 @@ export default class BarController extends DatasetController {
 	 */
 	_calculateBarIndexPixels(index, ruler, options) {
 		const me = this;
+		const stackCount = me.chart.options.skipNull ? me._getStackCount(index) : ruler.stackCount;
 		const range = options.barThickness === 'flex'
-			? computeFlexCategoryTraits(index, ruler, options)
-			: computeFitCategoryTraits(index, ruler, options);
+			? computeFlexCategoryTraits(index, ruler, options, stackCount)
+			: computeFitCategoryTraits(index, ruler, options, stackCount);
 
 		const stackIndex = me._getStackIndex(me.index, me._cachedMeta.stack);
 		const center = range.start + (range.chunk * stackIndex) + (range.chunk / 2);
@@ -484,7 +515,7 @@ BarController.id = 'bar';
  */
 BarController.defaults = {
 	datasetElementType: false,
-	dataElementType: 'rectangle',
+	dataElementType: 'bar',
 	dataElementOptions: [
 		'backgroundColor',
 		'borderColor',
@@ -492,13 +523,16 @@ BarController.defaults = {
 		'borderWidth',
 		'barPercentage',
 		'barThickness',
+		'base',
 		'categoryPercentage',
 		'maxBarThickness',
-		'minBarLength'
+		'minBarLength',
 	],
-	hover: {
+	interaction: {
 		mode: 'index'
 	},
+
+	hover: {},
 
 	datasets: {
 		categoryPercentage: 0.8,

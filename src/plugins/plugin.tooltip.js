@@ -139,7 +139,7 @@ function createTooltipItem(chart, item) {
  */
 function resolveOptions(options, fallbackFont) {
 
-	options = merge({}, [defaults.plugins.tooltip, options]);
+	options = merge(Object.create(null), [defaults.plugins.tooltip, options]);
 
 	options.bodyFont = toFont(options.bodyFont, fallbackFont);
 	options.titleFont = toFont(options.titleFont, fallbackFont);
@@ -234,9 +234,9 @@ function determineAlignment(chart, options, size) {
 	let xAlign = 'center';
 	let yAlign = 'center';
 
-	if (y < height) {
+	if (y < height / 2) {
 		yAlign = 'top';
-	} else if (y > (chart.height - height)) {
+	} else if (y > (chart.height - height / 2)) {
 		yAlign = 'bottom';
 	}
 
@@ -909,6 +909,45 @@ export class Tooltip extends Element {
 	}
 
 	/**
+	 * Get active elements in the tooltip
+	 * @returns {Array} Array of elements that are active in the tooltip
+	 */
+	getActiveElements() {
+		return this._active || [];
+	}
+
+	/**
+	 * Set active elements in the tooltip
+	 * @param {array} activeElements Array of active datasetIndex/index pairs.
+	 * @param {object} eventPosition Synthetic event position used in positioning
+	 */
+	setActiveElements(activeElements, eventPosition) {
+		const me = this;
+		const lastActive = me._active;
+		const active = activeElements.map(({datasetIndex, index}) => {
+			const meta = me._chart.getDatasetMeta(datasetIndex);
+
+			if (!meta) {
+				throw new Error('Cannot find a dataset at index ' + datasetIndex);
+			}
+
+			return {
+				datasetIndex,
+				element: meta.data[index],
+				index,
+			};
+		});
+		const changed = !_elementsEqual(lastActive, active);
+		const positionChanged = me._positionChanged(active, eventPosition);
+
+		if (changed || positionChanged) {
+			me._active = active;
+			me._eventPosition = eventPosition;
+			me.update(true);
+		}
+	}
+
+	/**
 	 * Handle an event
 	 * @param {IEvent} e - The event to handle
 	 * @param {boolean} [replay] - This is a replayed event (from update)
@@ -932,8 +971,7 @@ export class Tooltip extends Element {
 		// When there are multiple items shown, but the tooltip position is nearest mode
 		// an update may need to be made because our position may have changed even though
 		// the items are the same as before.
-		const position = positioners[options.position].call(me, active, e);
-		const positionChanged = this.caretX !== position.x || this.caretY !== position.y;
+		const positionChanged = me._positionChanged(active, e);
 
 		// Remember Last Actives
 		changed = replay || !_elementsEqual(active, lastActive) || positionChanged;
@@ -953,6 +991,19 @@ export class Tooltip extends Element {
 		}
 
 		return changed;
+	}
+
+	/**
+	 * Determine if the active elements + event combination changes the
+	 * tooltip position
+	 * @param {array} active - Active elements
+	 * @param {IEvent} e - Event that triggered the position change
+	 * @returns {boolean} True if the position has changed
+	 */
+	_positionChanged(active, e) {
+		const me = this;
+		const position = positioners[me.options.position].call(me, active, e);
+		return me.caretX !== position.x || me.caretY !== position.y;
 	}
 }
 
@@ -1015,9 +1066,7 @@ export default {
 	defaults: {
 		enabled: true,
 		custom: null,
-		mode: 'nearest',
 		position: 'average',
-		intersect: true,
 		backgroundColor: 'rgba(0,0,0,0.8)',
 		titleFont: {
 			style: 'bold',

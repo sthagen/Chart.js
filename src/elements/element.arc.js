@@ -1,13 +1,11 @@
 import Element from '../core/core.element';
-import {_angleBetween, getAngleFromPoint} from '../helpers/helpers.math';
-
-const TAU = Math.PI * 2;
+import {_angleBetween, getAngleFromPoint, TAU, HALF_PI} from '../helpers/index';
 
 function clipArc(ctx, element) {
 	const {startAngle, endAngle, pixelMargin, x, y, outerRadius, innerRadius} = element;
 	let angleMargin = pixelMargin / outerRadius;
 
-	// Draw an inner border by cliping the arc and drawing a double-width border
+	// Draw an inner border by clipping the arc and drawing a double-width border
 	// Enlarge the clipping arc by 0.33 pixels to eliminate glitches between borders
 	ctx.beginPath();
 	ctx.arc(x, y, outerRadius, startAngle - angleMargin, endAngle + angleMargin);
@@ -15,7 +13,7 @@ function clipArc(ctx, element) {
 		angleMargin = pixelMargin / innerRadius;
 		ctx.arc(x, y, innerRadius, endAngle + angleMargin, startAngle - angleMargin, true);
 	} else {
-		ctx.arc(x, y, pixelMargin, endAngle + Math.PI / 2, startAngle - Math.PI / 2);
+		ctx.arc(x, y, pixelMargin, endAngle + HALF_PI, startAngle - HALF_PI);
 	}
 	ctx.closePath();
 	ctx.clip();
@@ -112,7 +110,7 @@ function drawBorder(ctx, element) {
 	ctx.stroke();
 }
 
-export default class Arc extends Element {
+export default class ArcElement extends Element {
 
 	constructor(cfg) {
 		super();
@@ -207,12 +205,12 @@ export default class Arc extends Element {
 	}
 }
 
-Arc.id = 'arc';
+ArcElement.id = 'arc';
 
 /**
  * @type {any}
  */
-Arc.defaults = {
+ArcElement.defaults = {
 	borderAlign: 'center',
 	borderColor: '#fff',
 	borderWidth: 2,
@@ -222,6 +220,6 @@ Arc.defaults = {
 /**
  * @type {any}
  */
-Arc.defaultRoutes = {
+ArcElement.defaultRoutes = {
 	backgroundColor: 'color'
 };

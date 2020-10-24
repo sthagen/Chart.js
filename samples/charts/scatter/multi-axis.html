@@ -88,8 +88,10 @@
 			data: scatterChartData,
 			options: {
 				responsive: true,
-				hoverMode: 'nearest',
-				intersect: true,
+				interaction: {
+					intersect: true,
+					mode: 'nearest'
+				},
 				title: {
 					display: true,
 					text: 'Chart.js Scatter Chart - Multi Axis'
@@ -101,7 +103,13 @@
 					y: {
 						type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
 						display: true,
-						position: 'left'
+						position: 'left',
+
+						ticks: {
+							font: {
+								color: window.chartColors.red
+							}
+						}
 					},
 					y2: {
 						type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
@@ -109,7 +117,12 @@
 						position: 'right',
 						reverse: true,
 
-						// grid line settings
+						ticks: {
+							font: {
+								color: window.chartColors.blue
+							}
+						},
+
 						gridLines: {
 							drawOnChartArea: false, // only want the grid lines for one axis to show up
 						}

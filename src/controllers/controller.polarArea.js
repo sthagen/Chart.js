@@ -1,11 +1,10 @@
 import DatasetController from '../core/core.datasetController';
-import {toRadians} from '../helpers/helpers.math';
-import {resolve} from '../helpers/helpers.options';
+import {resolve, toRadians, PI} from '../helpers/index';
 
 function getStartAngleRadians(deg) {
 	// radialLinear scale draws angleLines using startAngle. 0 is expected to be at top.
 	// Here we adjust to standard unit circle used in drawing, where 0 is at right.
-	return toRadians(deg) - 0.5 * Math.PI;
+	return toRadians(deg) - 0.5 * PI;
 }
 
 export default class PolarAreaController extends DatasetController {
@@ -21,7 +20,7 @@ export default class PolarAreaController extends DatasetController {
 		const arcs = this._cachedMeta.data;
 
 		this._updateRadius();
-		this.updateElements(arcs, 0, mode);
+		this.updateElements(arcs, 0, arcs.length, mode);
 	}
 
 	/**
@@ -42,7 +41,7 @@ export default class PolarAreaController extends DatasetController {
 		me.innerRadius = me.outerRadius - radiusLength;
 	}
 
-	updateElements(arcs, start, mode) {
+	updateElements(arcs, start, count, mode) {
 		const me = this;
 		const reset = mode === 'reset';
 		const chart = me.chart;
@@ -59,14 +58,13 @@ export default class PolarAreaController extends DatasetController {
 		me._cachedMeta.count = me.countVisibleElements();
 
 		for (i = 0; i < start; ++i) {
-			angle += me._computeAngle(i);
+			angle += me._computeAngle(i, mode);
 		}
-		for (i = 0; i < arcs.length; i++) {
+		for (i = start; i < start + count; i++) {
 			const arc = arcs[i];
-			const index = start + i;
 			let startAngle = angle;
-			let endAngle = angle + me._computeAngle(index);
-			let outerRadius = this.chart.getDataVisibility(index) ? scale.getDistanceFromCenterForValue(dataset.data[index]) : 0;
+			let endAngle = angle + me._computeAngle(i, mode);
+			let outerRadius = this.chart.getDataVisibility(i) ? scale.getDistanceFromCenterForValue(dataset.data[i]) : 0;
 			angle = endAngle;
 
 			if (reset) {
@@ -86,10 +84,10 @@ export default class PolarAreaController extends DatasetController {
 				outerRadius,
 				startAngle,
 				endAngle,
-				options: me.resolveDataElementOptions(index, mode)
+				options: me.resolveDataElementOptions(i, mode)
 			};
 
-			me.updateElement(arc, index, properties, mode);
+			me.updateElement(arc, i, properties, mode);
 		}
 	}
 
@@ -110,7 +108,7 @@ export default class PolarAreaController extends DatasetController {
 	/**
 	 * @private
 	 */
-	_computeAngle(index) {
+	_computeAngle(index, mode) {
 		const me = this;
 		const meta = me._cachedMeta;
 		const count = meta.count;
@@ -121,18 +119,12 @@ export default class PolarAreaController extends DatasetController {
 		}
 
 		// Scriptable options
-		const context = {
-			chart: me.chart,
-			dataPoint: this.getParsed(index),
-			dataIndex: index,
-			dataset,
-			datasetIndex: me.index
-		};
+		const context = me.getContext(index, mode === 'active');
 
-		return resolve([
+		return toRadians(resolve([
 			me.chart.options.elements.arc.angle,
-			(2 * Math.PI) / count
-		], context, index);
+			360 / count
+		], context, index));
 	}
 }
 

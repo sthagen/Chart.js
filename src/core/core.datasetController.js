@@ -147,13 +147,11 @@ function getFirstScaleId(chart, axis) {
 	return Object.keys(scales).filter(key => scales[key].axis === axis).shift();
 }
 
-function optionKeys(optionNames) {
-	return isArray(optionNames) ? optionNames : Object.keys(optionNames);
-}
-
-function optionKey(key, active) {
-	return active ? 'hover' + _capitalize(key) : key;
-}
+const optionKeys = (optionNames) => isArray(optionNames) ? optionNames : Object.keys(optionNames);
+const optionKey = (key, active) => active ? 'hover' + _capitalize(key) : key;
+const isDirectUpdateMode = (mode) => mode === 'reset' || mode === 'none';
+const cloneIfNotShared = (cached, shared) => shared ? cached : Object.assign({}, cached);
+const freezeIfShared = (values, shared) => shared ? Object.freeze(values) : values;
 
 export default class DatasetController {
 
@@ -174,6 +172,10 @@ export default class DatasetController {
 		this._parsing = false;
 		this._data = undefined;
 		this._objectData = undefined;
+		this._sharedOptions = undefined;
+		this._drawStart = undefined;
+		this._drawCount = undefined;
+		this.enableOptionSharing = false;
 
 		this.initialize();
 	}
@@ -332,7 +334,7 @@ export default class DatasetController {
 	 */
 	configure() {
 		const me = this;
-		me._config = merge({}, [
+		me._config = merge(Object.create(null), [
 			me.chart.options[me._type].datasets,
 			me.getDataset(),
 		], {
@@ -374,11 +376,11 @@ export default class DatasetController {
 				parsed = me.parsePrimitiveData(meta, data, start, count);
 			}
 
-
+			const isNotInOrderComparedToPrev = () => isNaN(cur[iAxis]) || (prev && cur[iAxis] < prev[iAxis]);
 			for (i = 0; i < count; ++i) {
 				meta._parsed[i + start] = cur = parsed[i];
 				if (sorted) {
-					if (prev && cur[iAxis] < prev[iAxis]) {
+					if (isNotInOrderComparedToPrev()) {
 						sorted = false;
 					}
 					prev = cur;
@@ -538,7 +540,7 @@ export default class DatasetController {
 			parsed = _parsed[i];
 			value = parsed[scale.axis];
 			otherValue = parsed[otherScale.axis];
-			return (isNaN(value) || otherMin > otherValue || otherMax < otherValue);
+			return (isNaN(value) || isNaN(otherValue) || otherMin > otherValue || otherMax < otherValue);
 		}
 
 		for (i = 0; i < ilen; ++i) {
@@ -610,7 +612,7 @@ export default class DatasetController {
 		me.configure();
 		me._cachedAnimations = {};
 		me._cachedDataOpts = {};
-		me.update(mode);
+		me.update(mode || 'default');
 		meta._clip = toClip(valueOrDefault(me._config.clip, defaultClip(meta.xScale, meta.yScale, me.getMaxOverflow())));
 	}
 
@@ -627,13 +629,15 @@ export default class DatasetController {
 		const elements = meta.data || [];
 		const area = chart.chartArea;
 		const active = [];
-		let i, ilen;
+		const start = me._drawStart || 0;
+		const count = me._drawCount || (elements.length - start);
+		let i;
 
 		if (meta.dataset) {
-			meta.dataset.draw(ctx, area);
+			meta.dataset.draw(ctx, area, start, count);
 		}
 
-		for (i = 0, ilen = elements.length; i < ilen; ++i) {
+		for (i = start; i < start + count; ++i) {
 			const element = elements[i];
 			if (element.active) {
 				active.push(element);
@@ -642,7 +646,7 @@ export default class DatasetController {
 			}
 		}
 
-		for (i = 0, ilen = active.length; i < ilen; ++i) {
+		for (i = 0; i < active.length; ++i) {
 			active[i].draw(ctx, area);
 		}
 	}
@@ -684,13 +688,14 @@ export default class DatasetController {
 		if (active) {
 			me._addAutomaticHoverColors(index, options);
 		}
+
 		return options;
 	}
 
 	/**
-	 * @private
+	 * @protected
 	 */
-	_getContext(index, active) {
+	getContext(index, active) {
 		return {
 			chart: this.chart,
 			dataPoint: this.getParsed(index),
@@ -718,11 +723,14 @@ export default class DatasetController {
 	 * @protected
 	 */
 	resolveDataElementOptions(index, mode) {
+		mode = mode || 'default';
 		const me = this;
 		const active = mode === 'active';
-		const cached = me._cachedDataOpts;
-		if (cached[mode]) {
-			return cached[mode];
+		const cache = me._cachedDataOpts;
+		const cached = cache[mode];
+		const sharing = me.enableOptionSharing;
+		if (cached) {
+			return cloneIfNotShared(cached, sharing);
 		}
 		const info = {cacheable: !active};
 
@@ -734,14 +742,14 @@ export default class DatasetController {
 		});
 
 		if (info.cacheable) {
-			// `$shared` indicades this set of options can be shared between multiple elements.
+			// `$shared` indicates this set of options can be shared between multiple elements.
 			// Sharing is used to reduce number of properties to change during animation.
-			values.$shared = true;
+			values.$shared = sharing;
 
 			// We cache options by `mode`, which can be 'active' for example. This enables us
 			// to have the 'active' element options and 'default' options to switch between
 			// when interacting.
-			cached[mode] = values;
+			cache[mode] = freezeIfShared(values, sharing);
 		}
 
 		return values;
@@ -756,7 +764,7 @@ export default class DatasetController {
 		const datasetOpts = me._config;
 		const options = me.chart.options.elements[type] || {};
 		const values = {};
-		const context = me._getContext(index, active);
+		const context = me.getContext(index, active);
 		const keys = optionKeys(optionNames);
 
 		for (let i = 0, ilen = keys.length; i < ilen; ++i) {
@@ -790,10 +798,10 @@ export default class DatasetController {
 		}
 
 		const info = {cacheable: true};
-		const context = me._getContext(index, active);
-		const datasetAnim = resolve([me._config.animation], context, index, info);
+		const context = me.getContext(index, active);
 		const chartAnim = resolve([chart.options.animation], context, index, info);
-		let config = mergeIf({}, [datasetAnim, chartAnim]);
+		const datasetAnim = resolve([me._config.animation], context, index, info);
+		let config = chartAnim && mergeIf({}, [datasetAnim, chartAnim]);
 
 		if (config[mode]) {
 			config = Object.assign({}, config, config[mode]);
@@ -809,17 +817,14 @@ export default class DatasetController {
 	}
 
 	/**
-	 * Utility for checking if the options are shared and should be animated separately.
+	 * Utility for getting the options object shared between elements
 	 * @protected
 	 */
-	getSharedOptions(mode, el, options) {
-		if (!mode) {
-			// store element option sharing status for usage in interactions
-			this._sharedOptions = options && options.$shared;
+	getSharedOptions(options) {
+		if (!options.$shared) {
+			return;
 		}
-		if (mode !== 'reset' && options && options.$shared && el && el.options && el.options.$shared) {
-			return {target: el.options, options};
-		}
+		return this._sharedOptions || (this._sharedOptions = Object.assign({}, options));
 	}
 
 	/**
@@ -827,10 +832,7 @@ export default class DatasetController {
 	 * @protected
 	 */
 	includeOptions(mode, sharedOptions) {
-		if (mode === 'hide' || mode === 'show') {
-			return true;
-		}
-		return mode !== 'resize' && !sharedOptions;
+		return !sharedOptions || isDirectUpdateMode(mode);
 	}
 
 	/**
@@ -838,7 +840,7 @@ export default class DatasetController {
 	 * @protected
 	 */
 	updateElement(element, index, properties, mode) {
-		if (mode === 'reset' || mode === 'none') {
+		if (isDirectUpdateMode(mode)) {
 			Object.assign(element, properties);
 		} else {
 			this._resolveAnimations(index, mode).update(element, properties);
@@ -849,9 +851,9 @@ export default class DatasetController {
 	 * Utility to animate the shared options, that are potentially affecting multiple elements.
 	 * @protected
 	 */
-	updateSharedOptions(sharedOptions, mode) {
+	updateSharedOptions(sharedOptions, mode, newOptions) {
 		if (sharedOptions) {
-			this._resolveAnimations(undefined, mode).update(sharedOptions.target, sharedOptions.options);
+			this._resolveAnimations(undefined, mode).update({options: sharedOptions}, {options: newOptions});
 		}
 	}
 
@@ -860,7 +862,8 @@ export default class DatasetController {
 	 */
 	_setStyle(element, index, mode, active) {
 		element.active = active;
-		this._resolveAnimations(index, mode, active).update(element, {options: this.getStyle(index, active)});
+		const options = this.getStyle(index, active);
+		this._resolveAnimations(index, mode, active).update(element, {options: this.getSharedOptions(options) || options});
 	}
 
 	removeHoverStyle(element, datasetIndex, index) {
@@ -932,10 +935,10 @@ export default class DatasetController {
 		}
 		me.parse(start, count);
 
-		me.updateElements(elements, start, 'reset');
+		me.updateElements(data, start, count, 'reset');
 	}
 
-	updateElements(element, start, mode) {} // eslint-disable-line no-unused-vars
+	updateElements(element, start, count, mode) {} // eslint-disable-line no-unused-vars
 
 	/**
 	 * @private
@@ -993,12 +996,12 @@ export default class DatasetController {
 DatasetController.defaults = {};
 
 /**
- * Element type used to generate a meta dataset (e.g. Chart.element.Line).
+ * Element type used to generate a meta dataset (e.g. Chart.element.LineElement).
  */
 DatasetController.prototype.datasetElementType = null;
 
 /**
- * Element type used to generate a meta data (e.g. Chart.element.Point).
+ * Element type used to generate a meta data (e.g. Chart.element.PointElement).
  */
 DatasetController.prototype.dataElementType = null;
 

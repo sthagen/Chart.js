@@ -1,7 +1,7 @@
 import Element from '../core/core.element';
-import {_isPointInArea, drawPoint} from '../helpers/helpers.canvas';
+import {drawPoint} from '../helpers/helpers.canvas';
 
-export default class Point extends Element {
+export default class PointElement extends Element {
 
 	constructor(cfg) {
 		super();
@@ -46,7 +46,7 @@ export default class Point extends Element {
 		return (radius + borderWidth) * 2;
 	}
 
-	draw(ctx, chartArea) {
+	draw(ctx) {
 		const me = this;
 		const options = me.options;
 
@@ -54,13 +54,10 @@ export default class Point extends Element {
 			return;
 		}
 
-		// Clipping for Points.
-		if (chartArea === undefined || _isPointInArea(me, chartArea)) {
-			ctx.strokeStyle = options.borderColor;
-			ctx.lineWidth = options.borderWidth;
-			ctx.fillStyle = options.backgroundColor;
-			drawPoint(ctx, options, me.x, me.y);
-		}
+		ctx.strokeStyle = options.borderColor;
+		ctx.lineWidth = options.borderWidth;
+		ctx.fillStyle = options.backgroundColor;
+		drawPoint(ctx, options, me.x, me.y);
 	}
 
 	getRange() {
@@ -69,12 +66,12 @@ export default class Point extends Element {
 	}
 }
 
-Point.id = 'point';
+PointElement.id = 'point';
 
 /**
  * @type {any}
  */
-Point.defaults = {
+PointElement.defaults = {
 	borderWidth: 1,
 	hitRadius: 1,
 	hoverBorderWidth: 1,
@@ -86,7 +83,7 @@ Point.defaults = {
 /**
  * @type {any}
  */
-Point.defaultRoutes = {
+PointElement.defaultRoutes = {
 	backgroundColor: 'color',
 	borderColor: 'color'
 };

@@ -10,7 +10,15 @@ import {
   TimeUnit,
   IEvent,
 } from './interfaces';
-import { IChartDataset, IChartConfiguration, ConfigurationOptions, ConfigurationData } from '../interfaces';
+import {
+  DefaultDataPoint,
+  IChartConfiguration,
+  IChartData,
+  IChartDataset,
+  IChartOptions,
+  IChartType,
+  IScaleOptions
+} from '../interfaces';
 
 export interface IDateAdapter {
   /**
@@ -232,27 +240,39 @@ export interface IParsingOptions {
     | false;
 }
 
-export interface Chart<
-  T = number,
-  L = string,
-  C extends IChartConfiguration<string, T, L> = IChartConfiguration<string, T, L>
+export interface ActiveDataPoint {
+  datasetIndex: number;
+  index: number;
+}
+
+export interface ActiveElement extends ActiveDataPoint {
+  element: Element;
+}
+
+export declare class Chart<
+  TYPE extends IChartType = IChartType,
+  DATA extends unknown[] = DefaultDataPoint<TYPE>,
+  LABEL = string
 > {
   readonly platform: BasePlatform;
   readonly id: string;
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
-  readonly config: C;
+  readonly config: IChartConfiguration<TYPE, DATA, LABEL>
   readonly width: number;
   readonly height: number;
   readonly aspectRatio: number;
-  readonly options: ConfigurationOptions<C>;
   readonly boxes: ILayoutItem[];
   readonly currentDevicePixelRatio: number;
   readonly chartArea: IChartArea;
-  readonly data: ConfigurationData<C>;
   readonly scales: { [key: string]: Scale };
   readonly scale: Scale | undefined;
   readonly attached: boolean;
+
+  data: IChartData<TYPE, DATA, LABEL>;
+  options: IChartOptions<TYPE>;
+
+  constructor(item: ChartItem, config: IChartConfiguration<TYPE, DATA, LABEL>);
 
   clear(): this;
   stop(): this;
@@ -262,15 +282,11 @@ export interface Chart<
   buildOrUpdateScales(): void;
   buildOrUpdateControllers(): void;
   reset(): void;
-  update(mode?: string): void;
+  update(mode?: UpdateMode): void;
   render(): void;
   draw(): void;
 
-  getElementAtEvent(e: Event): InteractionItem[];
-  getElementsAtEvent(e: Event): InteractionItem[];
-  getElementsAtXAxis(e: Event): InteractionItem[];
-  getElementsAtEventForMode(e: Event, mode: string, options: any, useFinalPosition: boolean): InteractionItem[];
-  getDatasetAtEvent(e: Event): InteractionItem[];
+  getElementsAtEventForMode(e: Event, mode: string, options: IInteractionOptions, useFinalPosition: boolean): InteractionItem[];
 
   getSortedVisibleDatasetMetas(): IChartMeta[];
   getDatasetMeta(datasetIndex: number): IChartMeta;
@@ -282,11 +298,21 @@ export interface Chart<
   hide(datasetIndex: number): void;
   show(datasetIndex: number): void;
 
+  getActiveElements(): ActiveElement[];
+  setActiveElements(active: ActiveDataPoint[]);
+
   destroy(): void;
   toBase64Image(type?: string, quality?: any): string;
   bindEvents(): void;
   unbindEvents(): void;
   updateHoverStyle(items: Element, mode: 'dataset', enabled: boolean): void;
+
+  static readonly version: string;
+  static readonly instances: { [key: string]: Chart };
+  static readonly registry: Registry;
+  static getChart(key: string | CanvasRenderingContext2D | HTMLCanvasElement) : Chart | undefined;
+  static register(...items: IChartComponentLike[]): void;
+  static unregister(...items: IChartComponentLike[]): void;
 }
 
 export declare type ChartItem =
@@ -298,21 +324,17 @@ export declare type ChartItem =
   | { canvas: HTMLCanvasElement | OffscreenCanvas }
   | ArrayLike<CanvasRenderingContext2D | HTMLCanvasElement | OffscreenCanvas>;
 
-export const Chart: {
-  prototype: Chart;
-  new <T = number, L = string, C extends IChartConfiguration<string, T, L> = IChartConfiguration<string, T, L>>(
-    item: ChartItem,
-    config: C
-  ): Chart<T, L, C>;
+export declare enum UpdateModeEnum {
+  resize = 'resize',
+  reset = 'reset',
+  none = 'none',
+  hide = 'hide',
+  show = 'show',
+  normal = 'normal',
+  active = 'active'
+}
 
-  readonly version: string;
-  readonly instances: { [key: string]: Chart };
-  readonly registry: Registry;
-  register(...items: IChartComponentLike[]): void;
-  unregister(...items: IChartComponentLike[]): void;
-};
-
-export type UpdateMode = 'resize' | 'reset' | 'none' | 'hide' | 'show' | 'normal' | 'active' | undefined;
+export type UpdateMode = keyof typeof UpdateModeEnum;
 
 export class DatasetController<E extends Element = Element, DSE extends Element = Element> {
   constructor(chart: Chart, datasetIndex: number);
@@ -320,11 +342,12 @@ export class DatasetController<E extends Element = Element, DSE extends Element 
   readonly chart: Chart;
   readonly index: number;
   readonly _cachedMeta: IChartMeta<E, DSE>;
+  enableOptionSharing: boolean;
 
   linkScales(): void;
   getAllParsedValues(scale: Scale): number[];
   protected getLabelAndValue(index: number): { label: string; value: string };
-  updateElements(elements: E[], start: number, mode: UpdateMode): void;
+  updateElements(elements: E[], start: number, count: number, mode: UpdateMode): void;
   update(mode: UpdateMode): void;
   updateIndex(datasetIndex: number): void;
   protected getMaxOverflow(): boolean | number;
@@ -345,7 +368,7 @@ export class DatasetController<E extends Element = Element, DSE extends Element 
    * Utility for checking if the options are shared and should be animated separately.
    * @protected
    */
-  protected getSharedOptions(mode: UpdateMode, el: E, options: any): undefined | { target: any; options: any };
+  protected getSharedOptions(options: any): undefined | any;
   /**
    * Utility for determining if `options` should be included in the updated properties
    * @protected
@@ -356,13 +379,13 @@ export class DatasetController<E extends Element = Element, DSE extends Element 
    * @protected
    */
 
-  protected updateElement(element, index, properties, mode: UpdateMode): void;
+  protected updateElement(element: E | DSE, index: number | undefined, properties: any, mode: UpdateMode): void;
   /**
    * Utility to animate the shared options, that are potentially affecting multiple elements.
    * @protected
    */
 
-  protected updateSharedOptions(sharedOptions: any, mode: UpdateMode): void;
+  protected updateSharedOptions(sharedOptions: any, mode: UpdateMode, newOptions: any): void;
   removeHoverStyle(element: E, datasetIndex: number, index: number): void;
   setHoverStyle(element: E, datasetIndex: number, index: number): void;
 
@@ -394,13 +417,18 @@ export interface Defaults {
   readonly color: string;
   readonly events: ('mousemove' | 'mouseout' | 'click' | 'touchstart' | 'touchmove')[];
   readonly font: IFontSpec;
-  readonly hover: {
-    onHover?: () => void;
+  readonly interaction: {
     mode: InteractionMode | string;
     intersect: boolean;
   };
+  readonly hover: {
+    onHover?: () => void;
+    mode?: InteractionMode | string;
+    intersect?: boolean;
+  };
   readonly maintainAspectRatio: boolean;
   readonly onClick?: () => void;
+  readonly onHover?: () => void;
   readonly responsive: boolean;
 
   readonly plugins: { [key: string]: any };
@@ -822,7 +850,7 @@ export interface IPlugin<O = {}> {
   destroy?(chart: Chart, options: O): void;
 }
 
-declare type IChartComponentLike = IChartComponent | IChartComponent[] | { [key: string]: IChartComponent };
+export declare type IChartComponentLike = IChartComponent | IChartComponent[] | { [key: string]: IChartComponent };
 
 /**
  * Please use the module's default export which provides a singleton instance
@@ -856,7 +884,7 @@ export interface ITick {
   major?: boolean;
 }
 
-export interface IScaleOptions {
+export interface ICoreScaleOptions {
   /**
    * Controls the axis global visibility (visible when true, hidden when false). When display: 'auto', the axis is visible only if at least one associated dataset is visible.
    * @default true
@@ -930,7 +958,7 @@ export interface IScaleOptions {
   afterUpdate(axis: Scale): void;
 }
 
-export interface Scale<O extends IScaleOptions = IScaleOptions> extends Element<{}, O>, IChartArea {
+export interface Scale<O extends ICoreScaleOptions = ICoreScaleOptions> extends Element<{}, O>, IChartArea {
   readonly id: string;
   readonly type: string;
   readonly ctx: CanvasRenderingContext2D;
@@ -1045,7 +1073,7 @@ export interface Scale<O extends IScaleOptions = IScaleOptions> extends Element<
 }
 export const Scale: {
   prototype: Scale;
-  new <O extends IScaleOptions = IScaleOptions>(cfg: any): Scale<O>;
+  new <O extends ICoreScaleOptions = ICoreScaleOptions>(cfg: any): Scale<O>;
 };
 
 export interface IScriptAbleScaleContext {

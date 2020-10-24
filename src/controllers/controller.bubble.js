@@ -3,6 +3,10 @@ import {resolve} from '../helpers/helpers.options';
 import {resolveObjectKey} from '../helpers/helpers.core';
 
 export default class BubbleController extends DatasetController {
+	initialize() {
+		this.enableOptionSharing = true;
+		super.initialize();
+	}
 
 	/**
 	 * Parse array of objects
@@ -61,21 +65,20 @@ export default class BubbleController extends DatasetController {
 		const points = me._cachedMeta.data;
 
 		// Update Points
-		me.updateElements(points, 0, mode);
+		me.updateElements(points, 0, points.length, mode);
 	}
 
-	updateElements(points, start, mode) {
+	updateElements(points, start, count, mode) {
 		const me = this;
 		const reset = mode === 'reset';
 		const {xScale, yScale} = me._cachedMeta;
 		const firstOpts = me.resolveDataElementOptions(start, mode);
-		const sharedOptions = me.getSharedOptions(mode, points[start], firstOpts);
+		const sharedOptions = me.getSharedOptions(firstOpts);
 		const includeOptions = me.includeOptions(mode, sharedOptions);
 
-		for (let i = 0; i < points.length; i++) {
+		for (let i = start; i < start + count; i++) {
 			const point = points[i];
-			const index = start + i;
-			const parsed = !reset && me.getParsed(index);
+			const parsed = !reset && me.getParsed(i);
 			const x = reset ? xScale.getPixelForDecimal(0.5) : xScale.getPixelForValue(parsed.x);
 			const y = reset ? yScale.getBasePixel() : yScale.getPixelForValue(parsed.y);
 			const properties = {
@@ -85,17 +88,17 @@ export default class BubbleController extends DatasetController {
 			};
 
 			if (includeOptions) {
-				properties.options = me.resolveDataElementOptions(index, mode);
+				properties.options = me.resolveDataElementOptions(i, mode);
 
 				if (reset) {
 					properties.options.radius = 0;
 				}
 			}
 
-			me.updateElement(point, index, properties, mode);
+			me.updateElement(point, i, properties, mode);
 		}
 
-		me.updateSharedOptions(sharedOptions, mode);
+		me.updateSharedOptions(sharedOptions, mode, firstOpts);
 	}
 
 	/**
@@ -106,18 +109,11 @@ export default class BubbleController extends DatasetController {
 	resolveDataElementOptions(index, mode) {
 		const me = this;
 		const chart = me.chart;
-		const dataset = me.getDataset();
 		const parsed = me.getParsed(index);
 		let values = super.resolveDataElementOptions(index, mode);
 
 		// Scriptable options
-		const context = {
-			chart,
-			dataPoint: parsed,
-			dataIndex: index,
-			dataset,
-			datasetIndex: me.index
-		};
+		const context = me.getContext(index, mode === 'active');
 
 		// In case values were cached (and thus frozen), we need to clone the values
 		if (values.$shared) {

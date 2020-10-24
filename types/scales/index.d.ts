@@ -1,6 +1,5 @@
-import { ScriptAbleScale, IScaleOptions, ITick, Scale } from '../core';
+import { ScriptAbleScale, ICoreScaleOptions, ITick, Scale } from '../core';
 import { Color, IChartComponent, IFontSpec, TimeUnit } from '../core/interfaces';
-import { DeepPartial } from '../interfaces';
 
 export interface IGridLineOptions {
   /**
@@ -85,7 +84,7 @@ export interface ITickOptions {
   };
 }
 
-export interface ICartesianScaleOptions extends IScaleOptions {
+export interface ICartesianScaleOptions extends ICoreScaleOptions {
   /**
    * Position of the axis.
    */
@@ -130,6 +129,11 @@ export interface ICartesianScaleOptions extends IScaleOptions {
      */
     sampleSize: number;
     /**
+     * The label alignment
+     * @default 'center'
+     */
+    align: 'start' | 'center' | 'end';
+    /**
      * 	If true, automatically calculates how many labels can be shown and hides labels accordingly. Labels will be rotated up to maxRotation before skipping any. Turn autoSkip off to show all labels no matter what.
      * @default true
      */
@@ -139,6 +143,14 @@ export interface ICartesianScaleOptions extends IScaleOptions {
      * @default 0
      */
     autoSkipPadding: number;
+
+    /**
+     * How is the label positioned perpendicular to the axis direction.
+     * This only applies when the rotation is 0 and the axis position is one of "top", "left", "right", or "bottom"
+     * @default 'near'
+     */
+    crossAlign: 'near' | 'center' | 'far';
+
     /**
      * Distance in pixels to offset the label from the centre point of the tick (in the x direction for the x axis, and the y direction for the y axis). Note: this can cause labels at the edges to be cropped by the edge of the canvas
      * @default 0
@@ -180,7 +192,7 @@ export const CategoryScale: IChartComponent & {
   new <O extends ICategoryScaleOptions = ICategoryScaleOptions>(cfg: any): CategoryScale<O>;
 };
 
-export type ILinearScaleOptions = IScaleOptions & {
+export type ILinearScaleOptions = ICartesianScaleOptions & {
   stacked?: boolean;
 
   /**
@@ -276,17 +288,22 @@ export type ITimeScaleOptions = ICartesianScaleOptions & {
      */
     round: false | TimeUnit;
     /**
-     * If true and the unit is set to 'week', then the first day of the week will be Monday. Otherwise, it will be Sunday.
+     * If boolean and true and the unit is set to 'week', then the first day of the week will be Monday. Otherwise, it will be Sunday.
+     * If `number`, the index of the first day of the week (0 - Sunday, 6 - Saturday).
      * @default false
      */
-    isoWeekday: false | string;
+    isoWeekday: false | number;
     /**
-     * 	Sets how different time units are displayed.
+     * Sets how different time units are displayed.
      * @see https://www.chartjs.org/docs/next/axes/cartesian/time#display-formats
      */
     displayFormats: {
       [key: string]: string;
     };
+    /**
+     * The format string to use for the tooltip.
+     */
+    tooltipFormat: string;
     /**
      * If defined, will force the unit to be a certain type. See Time Units section below for details.
      * @default false
@@ -337,7 +354,7 @@ export const TimeSeriesScale: IChartComponent & {
   new <O extends ITimeScaleOptions = ITimeScaleOptions>(cfg: any): TimeSeriesScale<O>;
 };
 
-export type IRadialLinearScaleOptions = IScaleOptions & {
+export type IRadialLinearScaleOptions = ICoreScaleOptions & {
   animate: boolean;
 
   angleLines: {
@@ -471,28 +488,3 @@ export const RadialLinearScale: IChartComponent & {
   prototype: RadialLinearScale;
   new <O extends IRadialLinearScaleOptions = IRadialLinearScaleOptions>(cfg: any): RadialLinearScale<O>;
 };
-
-export interface ILinearScaleType extends DeepPartial<ILinearScaleOptions> {
-  type: 'linear';
-}
-export interface ILogarithmicScaleType extends DeepPartial<ILogarithmicScaleOptions> {
-  type: 'logarithmic';
-}
-export interface ICategoryScaleType extends DeepPartial<ICategoryScaleOptions> {
-  type: 'category';
-}
-export interface IRadialLinearScaleType extends DeepPartial<IRadialLinearScaleOptions> {
-  type: 'radialLinear';
-}
-export interface ITimeScaleType extends DeepPartial<ITimeScaleOptions> {
-  type: 'time';
-}
-export interface ITimeSeriesScaleType extends DeepPartial<ITimeScaleOptions> {
-  type: 'timeseries';
-}
-
-export interface IScaleChartOptions {
-  scales: {
-    [key: string]: { type: string } & DeepPartial<IScaleOptions>;
-  };
-}

@@ -91,57 +91,29 @@ myLineChart.toBase64Image();
 // => returns png data url of the image on the canvas
 ```
 
-## .getElementAtEvent(e)
+## .getElementsAtEventForMode(e, mode, options, useFinalPosition)
 
-Calling `getElementAtEvent(event)` on your Chart instance passing an argument of an event, or jQuery event, will return the single element at the event position. If there are multiple items within range, only the first is returned. The value returned from this method is an array with a single parameter. An array is used to keep a consistent API between the `get*AtEvent` methods.
+Calling `getElementsAtEventForMode(e, mode, options, useFinalPosition)` on your Chart instance passing an event and a mode will return the elements that are found. The `options` and `useFinalPosition` arguments are passed through to the handlers.
 
-```javascript
-myLineChart.getElementAtEvent(e);
-// => returns the first element at the event point.
-```
-
-To get an item that was clicked on, `getElementAtEvent` can be used.
+To get an item that was clicked on, `getElementsAtEventForMode` can be used.
 
 ```javascript
 function clickHandler(evt) {
-    var firstPoint = myChart.getElementAtEvent(evt)[0];
+    const points = myChart.getElementAtEventForMode(evt, 'nearest', { intersect: true }, true);
 
-    if (firstPoint) {
+    if (points.length) {
+        const firstPoint = points[0];
         var label = myChart.data.labels[firstPoint._index];
         var value = myChart.data.datasets[firstPoint._datasetIndex].data[firstPoint._index];
     }
 }
 ```
 
-## .getElementsAtEvent(e)
-
-Looks for the element under the event point, then returns all elements at the same data index. This is used internally for 'label' mode highlighting.
-
-Calling `getElementsAtEvent(event)` on your Chart instance passing an argument of an event, or jQuery event, will return the point elements that are at that the same position of that event.
-
-```javascript
-canvas.onclick = function(evt) {
-    var activePoints = myLineChart.getElementsAtEvent(evt);
-    // => activePoints is an array of points on the canvas that are at the same position as the click event.
-};
-```
-
-This functionality may be useful for implementing DOM based tooltips, or triggering custom behaviour in your application.
-
-## .getDatasetAtEvent(e)
-
-Looks for the element under the event point, then returns all elements from that dataset. This is used internally for 'dataset' mode highlighting.
-
-```javascript
-myLineChart.getDatasetAtEvent(e);
-// => returns an array of elements
-```
-
 ## .getDatasetMeta(index)
 
 Looks for the dataset that matches the current index and returns that metadata. This returned data has all of the metadata that is used to construct the chart.
 
-The `data` property of the metadata will contain information about each point, rectangle, etc. depending on the chart type.
+The `data` property of the metadata will contain information about each point, bar, etc. depending on the chart type.
 
 Extensive examples of usage are available in the [Chart.js tests](https://github.com/chartjs/Chart.js/tree/master/test).
 
@@ -161,7 +133,7 @@ chart.update(); // chart now renders with dataset hidden
 
 ## toggleDataVisibility(index)
 
-Toggles the visibility of an item in all datasets. A dataset needs to explicitly support this feature for it to have an effect. From internal chart types, doughnut / pie and polar area use this.
+Toggles the visibility of an item in all datasets. A dataset needs to explicitly support this feature for it to have an effect. From internal chart types, doughnut / pie, polar area, and bar use this.
 
 ```javascript
 chart.toggleDataVisibility(2); // toggles the item in all datasets, at index 2
@@ -190,4 +162,22 @@ Sets the visibility for the given dataset to true. Updates the chart and animate
 
 ```javascript
 chart.show(1); // shows dataset at index 1 and does 'show' animation.
+```
+
+## setActiveElements(activeElements)
+
+Sets the active (hovered) elements for the chart. See the "Programmatic Events" sample file to see this in action.
+
+```javascript
+chart.setActiveElements([
+    {datasetIndex: 0, index: 1},
+]);
+```
+
+## Static: getChart(key)
+
+Finds the chart instance from the given key. If the key is a `string`, it is interpreted as the ID of the Canvas node for the Chart. The key can also be a `CanvasRenderingContext2D` or an `HTMLDOMElement`. This will return `undefined` if no Chart is found. To be found, the chart must have previously been created.
+
+```javascript
+const chart = Chart.getChart("canvas-id")
 ```

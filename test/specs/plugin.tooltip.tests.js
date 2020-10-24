@@ -386,8 +386,8 @@ describe('Plugin.Tooltip', function() {
 
 			expect(tooltip.options.xPadding).toEqual(6);
 			expect(tooltip.options.yPadding).toEqual(6);
-			expect(tooltip.xAlign).toEqual('center');
-			expect(tooltip.yAlign).toEqual('top');
+			expect(tooltip.xAlign).toEqual('left');
+			expect(tooltip.yAlign).toEqual('center');
 
 			expect(tooltip.options.bodyFont).toEqual(jasmine.objectContaining({
 				color: '#fff',
@@ -462,8 +462,8 @@ describe('Plugin.Tooltip', function() {
 				}]
 			}));
 
-			expect(tooltip.x).toBeCloseToPixel(214);
-			expect(tooltip.y).toBeCloseToPixel(190);
+			expect(tooltip.x).toBeCloseToPixel(267);
+			expect(tooltip.y).toBeCloseToPixel(75);
 
 			done();
 		});
@@ -1488,6 +1488,27 @@ describe('Plugin.Tooltip', function() {
 				{name: 'fillText', args: ['footer', 105, 147]},
 				{name: 'restore', args: []}
 			]));
+		});
+	});
+
+	describe('active events', function() {
+		it('should set the active events', function() {
+			var chart = window.acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						label: 'Dataset 1',
+						data: [10, 20, 30],
+						pointHoverBorderColor: 'rgb(255, 0, 0)',
+						pointHoverBackgroundColor: 'rgb(0, 255, 0)'
+					}],
+					labels: ['Point 1', 'Point 2', 'Point 3']
+				},
+			});
+
+			const meta = chart.getDatasetMeta(0);
+			chart.tooltip.setActiveElements([{datasetIndex: 0, index: 0}], {x: 0, y: 0});
+			expect(chart.tooltip.getActiveElements()[0].element).toBe(meta.data[0]);
 		});
 	});
 });

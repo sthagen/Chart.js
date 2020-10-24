@@ -555,7 +555,7 @@ describe('Chart.controllers.bar', function() {
 		expect(meta.controller._getStackIndex(3)).toBe(3);
 	});
 
-	it('should create rectangle elements for each data item during initialization', function() {
+	it('should create bar elements for each data item during initialization', function() {
 		var chart = window.acquireChart({
 			type: 'bar',
 			data: {
@@ -568,11 +568,11 @@ describe('Chart.controllers.bar', function() {
 		});
 
 		var meta = chart.getDatasetMeta(1);
-		expect(meta.data.length).toBe(4); // 4 rectangles created
-		expect(meta.data[0] instanceof Chart.elements.Rectangle).toBe(true);
-		expect(meta.data[1] instanceof Chart.elements.Rectangle).toBe(true);
-		expect(meta.data[2] instanceof Chart.elements.Rectangle).toBe(true);
-		expect(meta.data[3] instanceof Chart.elements.Rectangle).toBe(true);
+		expect(meta.data.length).toBe(4); // 4 bars created
+		expect(meta.data[0] instanceof Chart.elements.BarElement).toBe(true);
+		expect(meta.data[1] instanceof Chart.elements.BarElement).toBe(true);
+		expect(meta.data[2] instanceof Chart.elements.BarElement).toBe(true);
+		expect(meta.data[3] instanceof Chart.elements.BarElement).toBe(true);
 	});
 
 	it('should update elements when modifying data', function() {
@@ -593,7 +593,7 @@ describe('Chart.controllers.bar', function() {
 				legend: false,
 				title: false,
 				elements: {
-					rectangle: {
+					bar: {
 						backgroundColor: 'red',
 						borderSkipped: 'top',
 						borderColor: 'green',
@@ -1151,7 +1151,7 @@ describe('Chart.controllers.bar', function() {
 		expect(meta.data[3].draw.calls.count()).toBe(1);
 	});
 
-	it('should set hover styles on rectangles', function() {
+	it('should set hover styles on bars', function() {
 		var chart = window.acquireChart({
 			type: 'bar',
 			data: {
@@ -1165,7 +1165,7 @@ describe('Chart.controllers.bar', function() {
 			},
 			options: {
 				elements: {
-					rectangle: {
+					bar: {
 						backgroundColor: 'rgb(255, 0, 0)',
 						borderColor: 'rgb(0, 0, 255)',
 						borderWidth: 2,
@@ -1219,7 +1219,7 @@ describe('Chart.controllers.bar', function() {
 			},
 			options: {
 				elements: {
-					rectangle: {
+					bars: {
 						backgroundColor: 'rgb(255, 0, 0)',
 						borderColor: 'rgb(0, 0, 255)',
 						borderWidth: 2,
@@ -1233,9 +1233,9 @@ describe('Chart.controllers.bar', function() {
 		var helpers = window.Chart.helpers;
 
 		// Change default
-		chart.options.elements.rectangle.backgroundColor = 'rgb(128, 128, 128)';
-		chart.options.elements.rectangle.borderColor = 'rgb(15, 15, 15)';
-		chart.options.elements.rectangle.borderWidth = 3.14;
+		chart.options.elements.bar.backgroundColor = 'rgb(128, 128, 128)';
+		chart.options.elements.bar.borderColor = 'rgb(15, 15, 15)';
+		chart.options.elements.bar.borderWidth = 3.14;
 
 		chart.update();
 		expect(bar.options.backgroundColor).toBe('rgb(128, 128, 128)');
@@ -1530,6 +1530,43 @@ describe('Chart.controllers.bar', function() {
 
 		expect(data[0].base + minBarLength).toEqual(data[0].x);
 		expect(data[1].base - minBarLength).toEqual(data[1].x);
+	});
+
+	it('should respect the data visibility settings', function() {
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				datasets: [{
+					data: [1, 2, 3, 4]
+				}],
+				labels: ['A', 'B', 'C', 'D']
+			},
+			options: {
+				legend: false,
+				title: false,
+				scales: {
+					x: {
+						type: 'category',
+						display: false
+					},
+					y: {
+						type: 'linear',
+						display: false,
+					}
+				}
+			}
+		});
+
+		var data = chart.getDatasetMeta(0).data;
+		expect(data[0].base).toBeCloseToPixel(512);
+		expect(data[0].y).toBeCloseToPixel(384);
+
+		chart.toggleDataVisibility(0);
+		chart.update();
+
+		data = chart.getDatasetMeta(0).data;
+		expect(data[0].base).toBeCloseToPixel(512);
+		expect(data[0].y).toBeCloseToPixel(512);
 	});
 
 	describe('Float bar', function() {

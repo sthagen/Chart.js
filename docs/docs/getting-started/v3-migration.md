@@ -21,6 +21,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * Distributed files are now in lower case. For example: `dist/chart.js`.
 * Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`. Please see the [installation](installation.md) and [integration](integration.md) docs for details on the recommended way to setup Chart.js if you were using these builds.
 * `moment` is no longer specified as an npm dependency. If you are using the `time` or `timeseries` scales, you must include one of [the available adapters](https://github.com/chartjs/awesome#adapters) and corresponding date library. You no longer need to exclude moment from your build.
+* The `Chart` constructor will throw an error if the canvas/context provided is already in use
 * Chart.js 3 is tree-shakeable. So if you are using it as an `npm` module in a project, you need to import and register the controllers, elements, scales and plugins you want to use. You will not have to call `register` if importing Chart.js via a `script` tag, but will not get the tree shaking benefits in this case. Here is an example of registering components:
 
 ```javascript
@@ -50,7 +51,7 @@ const chart = new Chart(ctx, {
 
 ### Chart types
 
-* `horizontalBar` chart type was removed. Horizontal bar charts can be configured using the new [`indexAxis`](../charts/bar.md#general) option
+* `horizontalBar` chart type was removed. Horizontal bar charts can be configured using the new [`indexAxis`](./charts/bar.mdx#general) option
 
 ### Options
 
@@ -63,9 +64,13 @@ A number of changes were made to the configuration options passed to the `Chart`
 
 #### Specific changes
 
+* `elements.rectangle` is now `elements.bar`
 * `hover.animationDuration` is now configured in `animation.active.duration`
 * `responsiveAnimationDuration` is now configured in `animation.resize.duration`
+* Polar area `elements.arc.angle` is now configured in degrees instead of radians.
 * Polar area `startAngle` option is now consistent with `Radar`, 0 is at top and value is in degrees. Default is changed from `-½π` to  `0`.
+* Doughnut `rotation` option is now in degrees and 0 is at top. Default is changed from `-½π` to  `0`.
+* Doughnut `circumference` option is now in degrees. Default is changed from `2π` to `0`.
 * `scales.[x/y]Axes` arrays were removed. Scales are now configured directly to `options.scales` object with the object key being the scale Id.
 * `scales.[x/y]Axes.barPercentage` was moved to dataset option `barPercentage`
 * `scales.[x/y]Axes.barThickness` was moved to dataset option `barThickness`
@@ -86,6 +91,7 @@ A number of changes were made to the configuration options passed to the `Chart`
 * `scales.[x/y]Axes.zeroLine*` options of axes were removed. Use scriptable scale options instead.
 * The dataset option `steppedLine` was removed. Use `stepped`
 * The dataset option `tension` was removed. Use `lineTension`
+* The chart option `showLines` was renamed to `showLine` to match the dataset option.
 * Dataset options are now configured as `options[type].datasets` rather than `options.datasets[type]`
 * To override the platform class used in a chart instance, pass `platform: PlatformClass` in the config object. Note that the class should be passed, not an instance of the class.
 * `aspectRatio` defaults to 1 for doughnut, pie, polarArea, and radar charts
@@ -198,6 +204,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 
 #### Interactions
 
+* To allow DRY configuration, a root options scope for common interaction options was added. `options.hover` and `options.tooltips` now both extend from `options.interaction`. Defaults are defined at `defaults.interaction` level, so by default hover and tooltip interactions share the same mode etc.
 * `interactions` are now limited to the chart area
 * `{mode: 'label'}` was replaced with `{mode: 'index'}`
 * `{mode: 'single'}` was replaced with `{mode: 'nearest', intersect: true}`
@@ -263,6 +270,7 @@ The following properties and methods were removed:
 * `Chart.offsetY`
 * `Chart.outerRadius` now lives on doughnut, pie, and polarArea controllers
 * `Chart.plugins` was replaced with `Chart.registry`. Plugin defaults are now in `Chart.defaults.plugins[id]`.
+* `Chart.plugins.register` was replaced by `Chart.register`.
 * `Chart.PolarArea`. New charts are created via `new Chart` and providing the appropriate `type` parameter
 * `Chart.prototype.generateLegend`
 * `Chart.platform`. It only contained `disableCSSInjection`. CSS is never injected in v3.
@@ -305,9 +313,9 @@ The following properties and methods were removed:
 * `helpers.getValueAtIndexOrDefault`. Use `helpers.resolve` instead.
 * `helpers.indexOf`
 * `helpers.lineTo`
-* `helpers.longestText` was moved to the `helpers.canvas` namespace and made private
+* `helpers.longestText` was made private
 * `helpers.max`
-* `helpers.measureText` was moved to the `helpers.canvas` namespace and made private
+* `helpers.measureText` was made private
 * `helpers.min`
 * `helpers.nextItem`
 * `helpers.niceNum`
@@ -345,6 +353,15 @@ The following properties and methods were removed:
 * `Title.margins` is now private
 * The tooltip item's `x` and `y` attributes were replaced by `element`. You can use `element.x` and `element.y` or `element.tooltipPosition()` instead.
 
+#### Removal of Public APIs
+
+The following public APIs were removed.
+
+* `getElementAtEvent` is replaced with `chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false)`
+* `getElementsAtEvent` is replaced with `chart.getElementsAtEventForMode(e, 'index', { intersect: true }, false)`
+* `getElementsAtXAxis` is replaced with `chart.getElementsAtEventForMode(e, 'index', { intersect: false }, false)`
+* `getDatasetAtEvent` is replaced with `chart.getElementsAtEventForMode(e, 'dataset', { intersect: true }, false)`
+
 #### Removal of private APIs
 
 The following private APIs were removed.
@@ -368,31 +385,16 @@ The following properties were renamed during v3 development:
 
 * `Chart.Animation.animationObject` was renamed to `Chart.Animation`
 * `Chart.Animation.chartInstance` was renamed to `Chart.Animation.chart`
-* `Chart.canvasHelpers` was renamed to `Chart.helpers.canvas`
+* `Chart.canvasHelpers` was merged with `Chart.helpers`
+* `Chart.elements.Arc` was renamed to `Chart.elements.ArcElement`
+* `Chart.elements.Line` was renamed to `Chart.elements.LineElement`
+* `Chart.elements.Point` was renamed to `Chart.elements.PointElement`
+* `Chart.elements.Rectangle` was renamed to `Chart.elements.BarElement`
 * `Chart.layoutService` was renamed to `Chart.layouts`
 * `Chart.pluginService` was renamed to `Chart.plugins`
-* `helpers._decimalPlaces` was renamed to `helpers.math._decimalPlaces`
-* `helpers.almostEquals` was renamed to `helpers.math.almostEquals`
-* `helpers.almostWhole` was renamed to `helpers.math.almostWhole`
 * `helpers.callCallback` was renamed to `helpers.callback`
-* `helpers.clear` was renamed to `helpers.canvas.clear`
-* `helpers.distanceBetweenPoints` was renamed to `helpers.math.distanceBetweenPoints`
-* `helpers.drawRoundedRectangle` was renamed to `helpers.canvas.roundedRect`
-* `helpers.getAngleFromPoint` was renamed to `helpers.math.getAngleFromPoint`
-* `helpers.getMaximumHeight` was renamed to `helpers.dom.getMaximumHeight`
-* `helpers.getMaximumWidth` was renamed to `helpers.dom.getMaximumWidth`
-* `helpers.getRelativePosition` was renamed to `helpers.dom.getRelativePosition`
-* `helpers.getStyle` was renamed to `helpers.dom.getStyle`
+* `helpers.drawRoundedRectangle` was renamed to `helpers.roundedRect`
 * `helpers.getValueOrDefault` was renamed to `helpers.valueOrDefault`
-* `helpers.easingEffects` was renamed to `helpers.easing.effects`
-* `helpers.log10` was renamed to `helpers.math.log10`
-* `helpers.isNumber` was renamed to `helpers.math.isNumber`
-* `helpers.sign` was renamed to `helpers.math.sign`
-* `helpers.retinaScale` was renamed to `helpers.dom.retinaScale`
-* `helpers.splineCurve` was renamed to `helpers.curve.splineCurve`
-* `helpers.splineCurveMonotone` was renamed to `helpers.curve.splineCurveMonotone`
-* `helpers.toDegrees` was renamed to `helpers.math.toDegrees`
-* `helpers.toRadians` was renamed to `helpers.math.toRadians`
 * `Scale.calculateTickRotation` was renamed to `Scale.calculateLabelRotation`
 * `Tooltip.options.legendColorBackgroupd` was renamed to `Tooltip.options.multiKeyBackground`
 
@@ -427,8 +429,6 @@ The private APIs listed below were renamed:
 * `DatasetController.resyncElements` was renamed to `DatasetController._resyncElements`
 * `RadialLinearScale.setReductions` was renamed to `RadialLinearScale._setReductions`
 * `Scale.handleMargins` was renamed to `Scale._handleMargins`
-* `helpers._alignPixel` was renamed to `helpers.canvas._alignPixel`
-* `helpers._decimalPlaces` was renamed to `helpers.math._decimalPlaces`
 
 ### Changed
 
@@ -460,7 +460,7 @@ The APIs listed in this section have changed in signature or behaviour from vers
 
 ##### Dataset Controllers
 
-* `updateElement` was replaced with `updateElements` now taking the elements to update, the `start` index, and `mode`
+* `updateElement` was replaced with `updateElements` now taking the elements to update, the `start` index, `count`, and `mode`
 * `setHoverStyle` and `removeHoverStyle` now additionally take the `datasetIndex` and `index`
 
 #### Interactions
@@ -473,9 +473,13 @@ The APIs listed in this section have changed in signature or behaviour from vers
 
 #### Helpers
 
+All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.clipArea` -> `Chart.helpers.clipArea`
+
 ##### Canvas Helper
 
 * The second parameter to `drawPoint` is now the full options object, so `style`, `rotation`, and `radius` are no longer passed explicitly
+* `helpers.getMaximumHeight` was replaced by `helpers.dom.getMaximumSize`
+* `helpers.getMaximumWidth` was replaced by `helpers.dom.getMaximumSize`
 
 #### Platform
 

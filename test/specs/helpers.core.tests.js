@@ -272,6 +272,11 @@ describe('Chart.helpers.core', function() {
 	});
 
 	describe('merge', function() {
+		it('should not allow prototype pollution', function() {
+			var test = helpers.merge({}, JSON.parse('{"__proto__":{"polluted": true}}'));
+			expect(test.prototype).toBeUndefined();
+			expect(Object.prototype.polluted).toBeUndefined();
+		});
 		it('should update target and return it', function() {
 			var target = {a: 1};
 			var result = helpers.merge(target, {a: 2, b: 'foo'});
@@ -316,30 +321,14 @@ describe('Chart.helpers.core', function() {
 			expect(output.o).not.toBe(o0);
 			expect(output.o.a).not.toBe(a1);
 		});
-		it('should preserve prototype of objects', function() {
-			// https://github.com/chartjs/Chart.js/issues/7340
-			class MyConfigObject {
-				constructor(s) {
-					this._s = s;
-				}
-				func() {
-					return 10;
-				}
-			}
-			var original = new MyConfigObject('something');
-			var output = helpers.merge({}, {
-				plugins: [{
-					test: original
-				}]
-			});
-			var clone = output.plugins[0].test;
-			expect(clone).toBeInstanceOf(MyConfigObject);
-			expect(clone).toEqual(original);
-			expect(clone === original).toBeFalse();
-		});
 	});
 
 	describe('mergeIf', function() {
+		it('should not allow prototype pollution', function() {
+			var test = helpers.mergeIf({}, JSON.parse('{"__proto__":{"polluted": true}}'));
+			expect(test.prototype).toBeUndefined();
+			expect(Object.prototype.polluted).toBeUndefined();
+		});
 		it('should update target and return it', function() {
 			var target = {a: 1};
 			var result = helpers.mergeIf(target, {a: 2, b: 'foo'});

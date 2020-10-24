@@ -214,7 +214,7 @@ function createDescriptors(plugins, options) {
 /**
  * @method IPlugin#beforeDraw
  * @desc Called before drawing `chart` at every animation frame. If any plugin returns `false`,
- * the frame drawing is cancelled untilanother `render` is triggered.
+ * the frame drawing is cancelled until another `render` is triggered.
  * @param {Chart} chart - The chart instance.
  * @param {object} options - The plugin options.
  * @returns {boolean} `false` to cancel the chart drawing.
@@ -289,8 +289,8 @@ function createDescriptors(plugins, options) {
  * the event will be discarded.
  * @param {Chart} chart - The chart instance.
  * @param {IEvent} event - The event object.
- * @param {object} options - The plugin options.
  * @param {boolean} replay - True if this event is replayed from `Chart.update`
+ * @param {object} options - The plugin options.
  */
 /**
  * @method IPlugin#afterEvent
@@ -298,8 +298,8 @@ function createDescriptors(plugins, options) {
  * will not be called if the `event` has been previously discarded.
  * @param {Chart} chart - The chart instance.
  * @param {IEvent} event - The event object.
- * @param {object} options - The plugin options.
  * @param {boolean} replay - True if this event is replayed from `Chart.update`
+ * @param {object} options - The plugin options.
  */
 /**
  * @method IPlugin#resize

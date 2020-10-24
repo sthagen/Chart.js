@@ -39,11 +39,11 @@ describe('Chart.controllers.doughnut', function() {
 		});
 
 		var meta = chart.getDatasetMeta(0);
-		expect(meta.data.length).toBe(4); // 4 rectangles created
-		expect(meta.data[0] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[1] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[2] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[3] instanceof Chart.elements.Arc).toBe(true);
+		expect(meta.data.length).toBe(4); // 4 arcs created
+		expect(meta.data[0] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[1] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[2] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[3] instanceof Chart.elements.ArcElement).toBe(true);
 	});
 
 	it ('should reset and update elements', function() {
@@ -69,8 +69,8 @@ describe('Chart.controllers.doughnut', function() {
 					animateScale: false
 				},
 				cutoutPercentage: 50,
-				rotation: Math.PI * -0.5,
-				circumference: Math.PI * 2.0,
+				rotation: 0,
+				circumference: 360,
 				elements: {
 					arc: {
 						backgroundColor: 'rgb(255, 0, 0)',
@@ -134,18 +134,18 @@ describe('Chart.controllers.doughnut', function() {
 		chart.update();
 
 		expect(meta.data.length).toBe(2);
-		expect(meta.data[0] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[1] instanceof Chart.elements.Arc).toBe(true);
+		expect(meta.data[0] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[1] instanceof Chart.elements.ArcElement).toBe(true);
 
 		// Add data
 		chart.data.datasets[1].data = [1, 2, 3, 4];
 		chart.update();
 
 		expect(meta.data.length).toBe(4);
-		expect(meta.data[0] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[1] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[2] instanceof Chart.elements.Arc).toBe(true);
-		expect(meta.data[3] instanceof Chart.elements.Arc).toBe(true);
+		expect(meta.data[0] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[1] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[2] instanceof Chart.elements.ArcElement).toBe(true);
+		expect(meta.data[3] instanceof Chart.elements.ArcElement).toBe(true);
 	});
 
 	it ('should rotate and limit circumference', function() {
@@ -160,14 +160,14 @@ describe('Chart.controllers.doughnut', function() {
 				}, {
 					data: [1, 0]
 				}],
-				labels: ['label0', 'label1']
+				labels: ['label0', 'label1', 'label2']
 			},
 			options: {
 				legend: false,
 				title: false,
 				cutoutPercentage: 50,
-				rotation: Math.PI,
-				circumference: Math.PI * 0.5,
+				rotation: 270,
+				circumference: 90,
 				elements: {
 					arc: {
 						backgroundColor: 'rgb(255, 0, 0)',
@@ -210,8 +210,8 @@ describe('Chart.controllers.doughnut', function() {
 				legend: false,
 				title: false,
 				cutoutPercentage: 50,
-				rotation: Math.PI,
-				circumference: Math.PI * 0.5,
+				rotation: 270,
+				circumference: 90,
 				elements: {
 					arc: {
 						backgroundColor: 'rgb(255, 0, 0)',

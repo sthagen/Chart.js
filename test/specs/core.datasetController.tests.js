@@ -624,43 +624,149 @@ describe('Chart.DatasetController', function() {
 			// Remove test from global defaults
 			delete Chart.defaults.elements.line.globalTest;
 		});
-	});
 
-	it('should resove names in object notation', function() {
-		Chart.defaults.elements.line.global = 'global';
+		it('should resove names in object notation', function() {
+			Chart.defaults.elements.line.global = 'global';
 
-		const chart = acquireChart({
-			type: 'line',
-			data: {
-				datasets: [{
-					data: [1],
-					datasetTest: 'dataset'
-				}]
-			},
-			options: {
-				elements: {
-					line: {
-						element: 'element'
+			const chart = acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						data: [1],
+						datasetTest: 'dataset'
+					}]
+				},
+				options: {
+					elements: {
+						line: {
+							element: 'element'
+						}
 					}
 				}
-			}
+			});
+
+			const controller = chart.getDatasetMeta(0).controller;
+
+			expect(controller._resolveOptions(
+				{
+					dataset: 'datasetTest',
+					element: 'elementTest',
+					global: 'globalTest'},
+				{type: 'line'})
+			).toEqual({
+				dataset: 'dataset',
+				element: 'element',
+				global: 'global'
+			});
+
+			// Remove test from global defaults
+			delete Chart.defaults.elements.line.global;
+		});
+	});
+
+	describe('resolveDataElementOptions', function() {
+		it('should cache options when possible', function() {
+			const chart = acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						data: [1, 2, 3],
+					}]
+				},
+			});
+
+			const controller = chart.getDatasetMeta(0).controller;
+
+			expect(controller.enableOptionSharing).toBeTrue();
+
+			const opts0 = controller.resolveDataElementOptions(0);
+			const opts1 = controller.resolveDataElementOptions(1);
+
+			expect(opts0 === opts1).toBeTrue();
+			expect(opts0.$shared).toBeTrue();
+			expect(Object.isFrozen(opts0)).toBeTrue();
 		});
 
-		const controller = chart.getDatasetMeta(0).controller;
+		it('should not cache options when option sharing is disabled', function() {
+			const chart = acquireChart({
+				type: 'radar',
+				data: {
+					datasets: [{
+						data: [1, 2, 3],
+					}]
+				},
+			});
 
-		expect(controller._resolveOptions(
-			{
-				dataset: 'datasetTest',
-				element: 'elementTest',
-				global: 'globalTest'},
-			{type: 'line'})
-		).toEqual({
-			dataset: 'dataset',
-			element: 'element',
-			global: 'global'
+			const controller = chart.getDatasetMeta(0).controller;
+
+			expect(controller.enableOptionSharing).toBeFalse();
+
+			const opts0 = controller.resolveDataElementOptions(0);
+			const opts1 = controller.resolveDataElementOptions(1);
+
+			expect(opts0 === opts1).toBeFalse();
+			expect(opts0.$shared).not.toBeTrue();
+			expect(Object.isFrozen(opts0)).toBeFalse();
 		});
 
-		// Remove test from global defaults
-		delete Chart.defaults.elements.line.global;
+		it('should not cache options when functions are used', function() {
+			const chart = acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						data: [1, 2, 3],
+						backgroundColor: () => 'red'
+					}]
+				},
+			});
+
+			const controller = chart.getDatasetMeta(0).controller;
+
+			const opts0 = controller.resolveDataElementOptions(0);
+			const opts1 = controller.resolveDataElementOptions(1);
+
+			expect(opts0 === opts1).toBeFalse();
+			expect(opts0.$shared).not.toBeTrue();
+			expect(Object.isFrozen(opts0)).toBeFalse();
+		});
+	});
+
+	describe('_resolveAnimations', function() {
+		it('should resolve to empty Animations when globally disabled', function() {
+			const chart = acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						data: [1],
+						animation: {
+							test: {duration: 10}
+						}
+					}]
+				},
+				options: {
+					animation: false
+				}
+			});
+
+			const controller = chart.getDatasetMeta(0).controller;
+
+			expect(controller._resolveAnimations(0)._properties.size).toEqual(0);
+		});
+
+		it('should resolve to empty Animations when disabled at dataset level', function() {
+			const chart = acquireChart({
+				type: 'line',
+				data: {
+					datasets: [{
+						data: [1],
+						animation: false
+					}]
+				}
+			});
+
+			const controller = chart.getDatasetMeta(0).controller;
+
+			expect(controller._resolveAnimations(0)._properties.size).toEqual(0);
+		});
 	});
 });
