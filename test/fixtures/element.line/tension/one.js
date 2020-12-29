@@ -7,13 +7,11 @@ module.exports = {
 					data: [{x: 1, y: 10}, {x: 5, y: 0}, {x: 15, y: -10}, {x: 19, y: -5}],
 					borderColor: 'red',
 					fill: false,
-					lineTension: 1
+					tension: 1
 				}
 			]
 		},
 		options: {
-			legend: false,
-			title: false,
 			scales: {
 				x: {type: 'linear', display: false, min: 0, max: 20},
 				y: {display: false, min: -15, max: 15}

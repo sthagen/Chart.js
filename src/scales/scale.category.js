@@ -1,5 +1,14 @@
 import Scale from '../core/core.scale';
 
+function findOrAddLabel(labels, raw, index) {
+	const first = labels.indexOf(raw);
+	if (first === -1) {
+		return typeof raw === 'string' ? labels.push(raw) - 1 : index;
+	}
+	const last = labels.lastIndexOf(raw);
+	return first !== last ? index : first;
+}
+
 export default class CategoryScale extends Scale {
 
 	constructor(cfg) {
@@ -12,20 +21,26 @@ export default class CategoryScale extends Scale {
 
 	parse(raw, index) {
 		const labels = this.getLabels();
-		if (labels[index] === raw) {
-			return index;
-		}
-		const first = labels.indexOf(raw);
-		const last = labels.lastIndexOf(raw);
-		return first === -1 || first !== last ? index : first;
+		return isFinite(index) && labels[index] === raw
+			? index : findOrAddLabel(labels, raw, index);
 	}
 
 	determineDataLimits() {
 		const me = this;
-		const max = me.getLabels().length - 1;
+		const {minDefined, maxDefined} = me.getUserBounds();
+		let {min, max} = me.getMinMax(true);
 
-		me.min = Math.max(me._userMin || 0, 0);
-		me.max = Math.min(me._userMax || max, max);
+		if (me.options.bounds === 'ticks') {
+			if (!minDefined) {
+				min = 0;
+			}
+			if (!maxDefined) {
+				max = me.getLabels().length - 1;
+			}
+		}
+
+		me.min = min;
+		me.max = max;
 	}
 
 	buildTicks() {
@@ -96,8 +111,7 @@ export default class CategoryScale extends Scale {
 
 	getValueForPixel(pixel) {
 		const me = this;
-		const value = Math.round(me._startValue + me.getDecimalForPixel(pixel) * me._valueRange);
-		return Math.min(Math.max(value, 0), me.ticks.length - 1);
+		return Math.round(me._startValue + me.getDecimalForPixel(pixel) * me._valueRange);
 	}
 
 	getBasePixel() {

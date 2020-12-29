@@ -7,13 +7,9 @@ describe('Core.scale', function() {
 
 	it('should provide default scale label options', function() {
 		expect(Chart.defaults.scale.scaleLabel).toEqual({
-			// display property
+			color: Chart.defaults.color,
 			display: false,
-
-			// actual label
 			labelString: '',
-
-			// top/bottom padding
 			padding: {
 				top: 4,
 				bottom: 4
@@ -147,8 +143,8 @@ describe('Core.scale', function() {
 							display: false
 						}
 					},
-					legend: {
-						display: false
+					plugins: {
+						legend: false
 					}
 				}
 			});
@@ -192,8 +188,8 @@ describe('Core.scale', function() {
 							offset: test.offset
 						}
 					},
-					legend: {
-						display: false
+					plugins: {
+						legend: false
 					}
 				}
 			});
@@ -228,8 +224,8 @@ describe('Core.scale', function() {
 						display: false
 					}
 				},
-				legend: {
-					display: false
+				plugins: {
+					legend: false
 				}
 			}
 		}, {

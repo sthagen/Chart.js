@@ -66,6 +66,16 @@ export {
 };
 
 /**
+ * Returns `value` if finite, else returns `defaultValue`.
+ * @param {*} value - The value to return if defined.
+ * @param {*} defaultValue - The value to return if `value` is not finite.
+ * @returns {*}
+ */
+export function finiteOrDefault(value, defaultValue) {
+	return isNumberFinite(value) ? value : defaultValue;
+}
+
+/**
  * Returns `value` if defined, else returns `defaultValue`.
  * @param {*} value - The value to return if defined.
  * @param {*} defaultValue - The value to return if `value` is undefined.
@@ -274,17 +284,21 @@ export function _deprecated(scope, value, previous, current) {
 }
 
 export function resolveObjectKey(obj, key) {
-	if (key.length < 3) {
-		return obj[key];
+	// Special cases for `x` and `y` keys. It's quite a lot faster to aceess this way.
+	// Those are the default keys Chart.js is resolving, so it makes sense to be fast.
+	if (key === 'x') {
+		return obj.x;
+	}
+	if (key === 'y') {
+		return obj.y;
 	}
 	const keys = key.split('.');
-	for (let i = 0, n = keys.length; i < n; ++i) {
+	for (let i = 0, n = keys.length; i < n && obj; ++i) {
 		const k = keys[i];
-		if (k in obj) {
-			obj = obj[k];
-		} else {
-			return;
+		if (!k) {
+			break;
 		}
+		obj = obj[k];
 	}
 	return obj;
 }

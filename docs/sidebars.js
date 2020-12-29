@@ -16,6 +16,7 @@ module.exports = {
 			'general/accessibility',
 			'general/responsive',
 			'general/device-pixel-ratio',
+			'general/locale',
 			{Interactions: ['general/interactions/index', 'general/interactions/events', 'general/interactions/modes']},
 			'general/options',
 			'general/colors',
@@ -49,7 +50,8 @@ module.exports = {
 				'axes/cartesian/category',
 				'axes/cartesian/linear',
 				'axes/cartesian/logarithmic',
-				'axes/cartesian/time'
+				'axes/cartesian/time',
+				'axes/cartesian/timeseries'
 			]},
 			{Radial: [
 				'axes/radial/index',

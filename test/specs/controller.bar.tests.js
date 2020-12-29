@@ -590,8 +590,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				elements: {
 					bar: {
 						backgroundColor: 'red',
@@ -630,7 +632,7 @@ describe('Chart.controllers.bar', function() {
 		].forEach(function(expected, i) {
 			expect(meta.data[i].x).toBeCloseToPixel(expected.x);
 			expect(meta.data[i].y).toBeCloseToPixel(expected.y);
-			expect(meta.data[i].base).toBeCloseToPixel(522);
+			expect(meta.data[i].base).toBeCloseToPixel(1024);
 			expect(meta.data[i].width).toBeCloseToPixel(46);
 			expect(meta.data[i].options).toEqual(jasmine.objectContaining({
 				backgroundColor: 'red',
@@ -664,8 +666,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -704,8 +708,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -748,8 +754,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -807,8 +815,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -828,10 +838,10 @@ describe('Chart.controllers.bar', function() {
 		var meta0 = chart.getDatasetMeta(0);
 
 		[
-			{b: 522, w: 92 / 2, x: 38, y: 512},
-			{b: 522, w: 92 / 2, x: 166, y: 819},
-			{b: 522, w: 92 / 2, x: 294, y: 922},
-			{b: 522, w: 92 / 2, x: 422.5, y: 0}
+			{b: 1024, w: 92 / 2, x: 38, y: 512},
+			{b: 1024, w: 92 / 2, x: 166, y: 819},
+			{b: 1024, w: 92 / 2, x: 294, y: 922},
+			{b: 1024, w: 92 / 2, x: 422.5, y: 0}
 		].forEach(function(values, i) {
 			expect(meta0.data[i].base).toBeCloseToPixel(values.b);
 			expect(meta0.data[i].width).toBeCloseToPixel(values.w);
@@ -843,8 +853,8 @@ describe('Chart.controllers.bar', function() {
 
 		[
 			{b: 512, w: 92 / 2, x: 89, y: 0},
-			{b: 522, w: 92 / 2, x: 217, y: 0},
-			{b: 522, w: 92 / 2, x: 345, y: 0},
+			{b: 819.2, w: 92 / 2, x: 217, y: 0},
+			{b: 921.6, w: 92 / 2, x: 345, y: 0},
 			{b: 0, w: 92 / 2, x: 473.5, y: 0}
 		].forEach(function(values, i) {
 			expect(meta1.data[i].base).toBeCloseToPixel(values.b);
@@ -868,8 +878,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -927,8 +939,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -988,8 +1002,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -1047,8 +1063,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -1093,8 +1111,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',
@@ -1219,7 +1239,7 @@ describe('Chart.controllers.bar', function() {
 			},
 			options: {
 				elements: {
-					bars: {
+					bar: {
 						backgroundColor: 'rgb(255, 0, 0)',
 						borderColor: 'rgb(0, 0, 255)',
 						borderWidth: 2,
@@ -1286,7 +1306,7 @@ describe('Chart.controllers.bar', function() {
 			var chart = window.acquireChart(this.config);
 			var meta = chart.getDatasetMeta(0);
 			var xScale = chart.scales[meta.xAxisID];
-			var options = Chart.defaults.bar.datasets;
+			var options = Chart.defaults.controllers.bar.datasets;
 
 			var categoryPercentage = options.categoryPercentage;
 			var barPercentage = options.barPercentage;
@@ -1436,8 +1456,8 @@ describe('Chart.controllers.bar', function() {
 						options: {
 							legend: false,
 							title: false,
-							bar: {
-								datasets: {
+							datasets: {
+								bar: {
 									barThickness: barThickness
 								}
 							},
@@ -1462,7 +1482,7 @@ describe('Chart.controllers.bar', function() {
 						expected = barThickness;
 					} else {
 						var scale = chart.scales.x;
-						var options = Chart.defaults.bar.datasets;
+						var options = Chart.defaults.controllers.bar.datasets;
 						var categoryPercentage = options.categoryPercentage;
 						var barPercentage = options.barPercentage;
 						var tickInterval = scale.getPixelForTick(1) - scale.getPixelForTick(0);
@@ -1542,8 +1562,10 @@ describe('Chart.controllers.bar', function() {
 				labels: ['A', 'B', 'C', 'D']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						type: 'category',

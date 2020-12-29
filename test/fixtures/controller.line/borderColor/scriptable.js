@@ -8,7 +8,7 @@ module.exports = {
 					// option in dataset
 					data: [4, 5, 10, null, -10, -5],
 					borderColor: function(ctx) {
-						var index = (ctx.dataIndex === undefined ? ctx.datasetIndex : ctx.dataIndex);
+						var index = ctx.index;
 						return index === 0 ? '#ff0000'
 							: index === 1 ? '#00ff00'
 							: '#0000ff';
@@ -21,12 +21,10 @@ module.exports = {
 			]
 		},
 		options: {
-			legend: false,
-			title: false,
 			elements: {
 				line: {
 					borderColor: function(ctx) {
-						var index = (ctx.dataIndex === undefined ? ctx.datasetIndex : ctx.dataIndex);
+						var index = ctx.index;
 						return index === 0 ? '#ff0000'
 							: index === 1 ? '#00ff00'
 							: '#0000ff';

@@ -1,3 +1,4 @@
+
 export function fontString(pixelSize, fontStyle, fontFamily) {
 	return fontStyle + ' ' + pixelSize + 'px ' + fontFamily;
 }
@@ -37,4 +38,32 @@ export function throttled(fn, thisArg, updateFn) {
 			});
 		}
 	};
+}
+
+
+/**
+ * Converts 'start' to 'left', 'end' to 'right' and others to 'center'
+ * @param {string} align start, end, center
+ * @private
+ */
+export const _toLeftRightCenter = (align) => align === 'start' ? 'left' : align === 'end' ? 'right' : 'center';
+
+/**
+ * Returns `start`, `end` or `(start + end) / 2` depending on `align`
+ * @param {string} align start, end, center
+ * @param {number} start value for start
+ * @param {number} end value for end
+ * @private
+ */
+export const _alignStartEnd = (align, start, end) => align === 'start' ? start : align === 'end' ? end : (start + end) / 2;
+
+/**
+ * Return true if `x` or `y` property (coordinates) of the element is currently animated.
+ * @param {object} element
+ * @returns {boolean}
+ * @private
+ */
+export function _coordsAnimated(element) {
+	const anims = element && element.$animations;
+	return anims && ((anims.x && anims.x.active) || (anims.y && anims.y.active));
 }

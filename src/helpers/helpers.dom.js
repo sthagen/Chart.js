@@ -34,9 +34,7 @@ function parseMaxStyle(styleValue, node, parentProperty) {
 const getComputedStyle = (element) => window.getComputedStyle(element, null);
 
 export function getStyle(el, property) {
-	return el.currentStyle ?
-		el.currentStyle[property] :
-		getComputedStyle(el).getPropertyValue(property);
+	return getComputedStyle(el).getPropertyValue(property);
 }
 
 const positions = ['top', 'right', 'bottom', 'left'];
@@ -52,6 +50,8 @@ function getPositionedStyle(styles, style, suffix) {
 	return result;
 }
 
+const useOffsetPos = (x, y, target) => (x > 0 || y > 0) && (!target || !target.shadowRoot);
+
 function getCanvasPosition(evt, canvas) {
 	const e = evt.originalEvent || evt;
 	const touches = e.touches;
@@ -59,7 +59,7 @@ function getCanvasPosition(evt, canvas) {
 	const {offsetX, offsetY} = source;
 	let box = false;
 	let x, y;
-	if (offsetX > 0 || offsetY > 0) {
+	if (useOffsetPos(offsetX, offsetY, e.target)) {
 		x = offsetX;
 		y = offsetY;
 	} else {

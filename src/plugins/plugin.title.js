@@ -1,18 +1,19 @@
-import defaults from '../core/core.defaults';
 import Element from '../core/core.element';
 import layouts from '../core/core.layouts';
-import {PI, isArray, mergeIf, toPadding, toFont} from '../helpers';
+import {PI, isArray, toPadding, toFont} from '../helpers';
+import {_toLeftRightCenter, _alignStartEnd} from '../helpers/helpers.extras';
+import {renderText} from '../helpers/helpers.canvas';
 
 export class Title extends Element {
+	/**
+	 * @param {{ ctx: any; options: any; chart: any; }} config
+	 */
 	constructor(config) {
 		super();
-
-		Object.assign(this, config);
 
 		this.chart = config.chart;
 		this.options = config.options;
 		this.ctx = config.ctx;
-		this._margins = undefined;
 		this._padding = undefined;
 		this.top = undefined;
 		this.bottom = undefined;
@@ -20,106 +21,67 @@ export class Title extends Element {
 		this.right = undefined;
 		this.width = undefined;
 		this.height = undefined;
-		this.maxWidth = undefined;
-		this.maxHeight = undefined;
 		this.position = undefined;
 		this.weight = undefined;
 		this.fullWidth = undefined;
 	}
 
-	// These methods are ordered by lifecycle. Utilities then follow.
-
-
-	beforeUpdate() {}
-
-	update(maxWidth, maxHeight, margins) {
-		const me = this;
-
-		// Update Lifecycle - Probably don't want to ever extend or overwrite this function ;)
-		me.beforeUpdate();
-
-		// Absorb the master measurements
-		me.maxWidth = maxWidth;
-		me.maxHeight = maxHeight;
-		me._margins = margins;
-
-		// Dimensions
-		me.beforeSetDimensions();
-		me.setDimensions();
-		me.afterSetDimensions();
-		// Labels
-		me.beforeBuildLabels();
-		me.buildLabels();
-		me.afterBuildLabels();
-
-		// Fit
-		me.beforeFit();
-		me.fit();
-		me.afterFit();
-		//
-		me.afterUpdate();
-
-	}
-
-	afterUpdate() {}
-
-
-	beforeSetDimensions() {}
-
-	setDimensions() {
-		const me = this;
-		// Set the unconstrained dimension before label rotation
-		if (me.isHorizontal()) {
-			// Reset position before calculating rotation
-			me.width = me.maxWidth;
-			me.left = 0;
-			me.right = me.width;
-		} else {
-			me.height = me.maxHeight;
-
-			// Reset position before calculating rotation
-			me.top = 0;
-			me.bottom = me.height;
-		}
-	}
-
-	afterSetDimensions() {}
-
-	beforeBuildLabels() {}
-
-	buildLabels() {}
-
-	afterBuildLabels() {}
-
-	beforeFit() {}
-
-	fit() {
+	update(maxWidth, maxHeight) {
 		const me = this;
 		const opts = me.options;
-		const minSize = {};
-		const isHorizontal = me.isHorizontal();
+
+		me.left = 0;
+		me.top = 0;
 
 		if (!opts.display) {
-			me.width = minSize.width = me.height = minSize.height = 0;
+			me.width = me.height = me.right = me.bottom = 0;
 			return;
 		}
+
+		me.width = me.right = maxWidth;
+		me.height = me.bottom = maxHeight;
 
 		const lineCount = isArray(opts.text) ? opts.text.length : 1;
 		me._padding = toPadding(opts.padding);
 		const textSize = lineCount * toFont(opts.font, me.chart.options.font).lineHeight + me._padding.height;
-		me.width = minSize.width = isHorizontal ? me.maxWidth : textSize;
-		me.height = minSize.height = isHorizontal ? textSize : me.maxHeight;
+
+		if (me.isHorizontal()) {
+			me.height = textSize;
+		} else {
+			me.width = textSize;
+		}
 	}
 
-	afterFit() {}
-
-	// Shared Methods
 	isHorizontal() {
 		const pos = this.options.position;
 		return pos === 'top' || pos === 'bottom';
 	}
 
-	// Actually draw the title block on the canvas
+	_drawArgs(offset) {
+		const {top, left, bottom, right, options} = this;
+		const align = options.align;
+		let rotation = 0;
+		let maxWidth, titleX, titleY;
+
+		if (this.isHorizontal()) {
+			titleX = _alignStartEnd(align, left, right);
+			titleY = top + offset;
+			maxWidth = right - left;
+		} else {
+			if (options.position === 'left') {
+				titleX = left + offset;
+				titleY = _alignStartEnd(align, bottom, top);
+				rotation = PI * -0.5;
+			} else {
+				titleX = right - offset;
+				titleY = _alignStartEnd(align, top, bottom);
+				rotation = PI * 0.5;
+			}
+			maxWidth = bottom - top;
+		}
+		return {titleX, titleY, maxWidth, rotation};
+	}
+
 	draw() {
 		const me = this;
 		const ctx = me.ctx;
@@ -132,80 +94,20 @@ export class Title extends Element {
 		const fontOpts = toFont(opts.font, me.chart.options.font);
 		const lineHeight = fontOpts.lineHeight;
 		const offset = lineHeight / 2 + me._padding.top;
-		let rotation = 0;
-		const top = me.top;
-		const left = me.left;
-		const bottom = me.bottom;
-		const right = me.right;
-		let maxWidth, titleX, titleY;
-		let align;
+		const {titleX, titleY, maxWidth, rotation} = me._drawArgs(offset);
 
-		// Horizontal
-		if (me.isHorizontal()) {
-			switch (opts.align) {
-			case 'start':
-				titleX = left;
-				align = 'left';
-				break;
-			case 'end':
-				titleX = right;
-				align = 'right';
-				break;
-			default:
-				titleX = left + ((right - left) / 2);
-				align = 'center';
-				break;
-			}
-
-			titleY = top + offset;
-			maxWidth = right - left;
-		} else {
-			titleX = opts.position === 'left' ? left + offset : right - offset;
-
-			switch (opts.align) {
-			case 'start':
-				titleY = opts.position === 'left' ? bottom : top;
-				align = 'left';
-				break;
-			case 'end':
-				titleY = opts.position === 'left' ? top : bottom;
-				align = 'right';
-				break;
-			default:
-				titleY = top + ((bottom - top) / 2);
-				align = 'center';
-				break;
-			}
-			maxWidth = bottom - top;
-			rotation = PI * (opts.position === 'left' ? -0.5 : 0.5);
-		}
-
-		ctx.save();
-
-		ctx.fillStyle = fontOpts.color;
-		ctx.font = fontOpts.string;
-
-		ctx.translate(titleX, titleY);
-		ctx.rotate(rotation);
-		ctx.textAlign = align;
-		ctx.textBaseline = 'middle';
-
-		const text = opts.text;
-		if (isArray(text)) {
-			let y = 0;
-			for (let i = 0; i < text.length; ++i) {
-				ctx.fillText(text[i], 0, y, maxWidth);
-				y += lineHeight;
-			}
-		} else {
-			ctx.fillText(text, 0, 0, maxWidth);
-		}
-
-		ctx.restore();
+		renderText(ctx, opts.text, 0, 0, fontOpts, {
+			color: opts.color,
+			maxWidth,
+			rotation,
+			textAlign: _toLeftRightCenter(opts.align),
+			textBaseline: 'middle',
+			translation: [titleX, titleY],
+		});
 	}
 }
 
-function createNewTitleBlockAndAttach(chart, titleOpts) {
+function createTitle(chart, titleOpts) {
 	const title = new Title({
 		ctx: chart.ctx,
 		options: titleOpts,
@@ -217,42 +119,48 @@ function createNewTitleBlockAndAttach(chart, titleOpts) {
 	chart.titleBlock = title;
 }
 
+function removeTitle(chart) {
+	const title = chart.titleBlock;
+	if (title) {
+		layouts.removeBox(chart, title);
+		delete chart.titleBlock;
+	}
+}
+
+function createOrUpdateTitle(chart, options) {
+	const title = chart.titleBlock;
+	if (title) {
+		layouts.configure(chart, title, options);
+		title.options = options;
+	} else {
+		createTitle(chart, options);
+	}
+}
+
 export default {
 	id: 'title',
 
 	/**
-	 * Backward compatibility: since 2.1.5, the title is registered as a plugin, making
-	 * Chart.Title obsolete. To avoid a breaking change, we export the Title as part of
-	 * the plugin, which one will be re-exposed in the chart.js file.
-	 * https://github.com/chartjs/Chart.js/pull/2640
+	 * For tests
 	 * @private
 	 */
 	_element: Title,
 
-	beforeInit(chart) {
-		const titleOpts = chart.options.title;
-
-		if (titleOpts) {
-			createNewTitleBlockAndAttach(chart, titleOpts);
-		}
+	start(chart, _args, options) {
+		createTitle(chart, options);
 	},
 
-	beforeUpdate(chart) {
-		const titleOpts = chart.options.title;
+	stop(chart) {
 		const titleBlock = chart.titleBlock;
+		layouts.removeBox(chart, titleBlock);
+		delete chart.titleBlock;
+	},
 
-		if (titleOpts) {
-			mergeIf(titleOpts, defaults.plugins.title);
-
-			if (titleBlock) {
-				layouts.configure(chart, titleBlock, titleOpts);
-				titleBlock.options = titleOpts;
-			} else {
-				createNewTitleBlockAndAttach(chart, titleOpts);
-			}
-		} else if (titleBlock) {
-			layouts.removeBox(chart, titleBlock);
-			delete chart.titleBlock;
+	beforeUpdate(chart, _args, options) {
+		if (options === false) {
+			removeTitle(chart);
+		} else {
+			createOrUpdateTitle(chart, options);
 		}
 	},
 
@@ -267,5 +175,9 @@ export default {
 		position: 'top',
 		text: '',
 		weight: 2000         // by default greater than legend (1000) to be above
+	},
+
+	defaultRoutes: {
+		color: 'color'
 	}
 };

@@ -1,4 +1,3 @@
-/* eslint-disable import/no-namespace, import/namespace */
 import animator from './core.animator';
 import defaults from './core.defaults';
 import Interaction from './core.interaction';
@@ -6,182 +5,20 @@ import layouts from './core.layouts';
 import {BasicPlatform, DomPlatform} from '../platform';
 import PluginService from './core.plugins';
 import registry from './core.registry';
+import Config, {determineAxis, getIndexAxis} from './core.config';
 import {retinaScale} from '../helpers/helpers.dom';
-import {mergeIf, merge, _merger, each, callback as callCallback, uid, valueOrDefault, _elementsEqual} from '../helpers/helpers.core';
-import {clear as canvasClear, clipArea, unclipArea, _isPointInArea} from '../helpers/helpers.canvas';
+import {each, callback as callCallback, uid, valueOrDefault, _elementsEqual} from '../helpers/helpers.core';
+import {clearCanvas, clipArea, unclipArea, _isPointInArea} from '../helpers/helpers.canvas';
 // @ts-ignore
 import {version} from '../../package.json';
 
 /**
- * @typedef { import("../platform/platform.base").IEvent } IEvent
+ * @typedef { import("../platform/platform.base").ChartEvent } ChartEvent
  */
-
-
-function getIndexAxis(type, options) {
-	const typeDefaults = defaults[type] || {};
-	const datasetDefaults = typeDefaults.datasets || {};
-	const typeOptions = options[type] || {};
-	const datasetOptions = typeOptions.datasets || {};
-	return datasetOptions.indexAxis || options.indexAxis || datasetDefaults.indexAxis || 'x';
-}
-
-function getAxisFromDefaultScaleID(id, indexAxis) {
-	let axis = id;
-	if (id === '_index_') {
-		axis = indexAxis;
-	} else if (id === '_value_') {
-		axis = indexAxis === 'x' ? 'y' : 'x';
-	}
-	return axis;
-}
-
-function getDefaultScaleIDFromAxis(axis, indexAxis) {
-	return axis === indexAxis ? '_index_' : '_value_';
-}
-
-function mergeScaleConfig(config, options) {
-	options = options || {};
-	const chartDefaults = defaults[config.type] || {scales: {}};
-	const configScales = options.scales || {};
-	const chartIndexAxis = getIndexAxis(config.type, options);
-	const firstIDs = Object.create(null);
-	const scales = Object.create(null);
-
-	// First figure out first scale id's per axis.
-	Object.keys(configScales).forEach(id => {
-		const scaleConf = configScales[id];
-		const axis = determineAxis(id, scaleConf);
-		const defaultId = getDefaultScaleIDFromAxis(axis, chartIndexAxis);
-		firstIDs[axis] = firstIDs[axis] || id;
-		scales[id] = mergeIf(Object.create(null), [{axis}, scaleConf, chartDefaults.scales[axis], chartDefaults.scales[defaultId]]);
-	});
-
-	// Backward compatibility
-	if (options.scale) {
-		scales[options.scale.id || 'r'] = mergeIf(Object.create(null), [{axis: 'r'}, options.scale, chartDefaults.scales.r]);
-		firstIDs.r = firstIDs.r || options.scale.id || 'r';
-	}
-
-	// Then merge dataset defaults to scale configs
-	config.data.datasets.forEach(dataset => {
-		const type = dataset.type || config.type;
-		const indexAxis = dataset.indexAxis || getIndexAxis(type, options);
-		const datasetDefaults = defaults[type] || {};
-		const defaultScaleOptions = datasetDefaults.scales || {};
-		Object.keys(defaultScaleOptions).forEach(defaultID => {
-			const axis = getAxisFromDefaultScaleID(defaultID, indexAxis);
-			const id = dataset[axis + 'AxisID'] || firstIDs[axis] || axis;
-			scales[id] = scales[id] || Object.create(null);
-			mergeIf(scales[id], [{axis}, configScales[id], defaultScaleOptions[defaultID]]);
-		});
-	});
-
-	// apply scale defaults, if not overridden by dataset defaults
-	Object.keys(scales).forEach(key => {
-		const scale = scales[key];
-		mergeIf(scale, [defaults.scales[scale.type], defaults.scale]);
-	});
-
-	return scales;
-}
-
-/**
- * Recursively merge the given config objects as the root options by handling
- * default scale options for the `scales` and `scale` properties, then returns
- * a deep copy of the result, thus doesn't alter inputs.
- */
-function mergeConfig(...args/* config objects ... */) {
-	return merge(Object.create(null), args, {
-		merger(key, target, source, options) {
-			if (key !== 'scales' && key !== 'scale') {
-				_merger(key, target, source, options);
-			}
-		}
-	});
-}
-
-function initConfig(config) {
-	config = config || {};
-
-	// Do NOT use mergeConfig for the data object because this method merges arrays
-	// and so would change references to labels and datasets, preventing data updates.
-	const data = config.data = config.data || {datasets: [], labels: []};
-	data.datasets = data.datasets || [];
-	data.labels = data.labels || [];
-
-	const scaleConfig = mergeScaleConfig(config, config.options);
-
-	const options = config.options = mergeConfig(
-		defaults,
-		defaults[config.type],
-		config.options || {});
-
-	options.hover = merge(Object.create(null), [
-		defaults.interaction,
-		defaults.hover,
-		options.interaction,
-		options.hover
-	]);
-
-	options.scales = scaleConfig;
-
-	options.title = (options.title !== false) && merge(Object.create(null), [
-		defaults.plugins.title,
-		options.title
-	]);
-	options.tooltips = (options.tooltips !== false) && merge(Object.create(null), [
-		defaults.interaction,
-		defaults.plugins.tooltip,
-		options.interaction,
-		options.tooltips
-	]);
-
-	return config;
-}
-
-function isAnimationDisabled(config) {
-	return !config.animation;
-}
-
-function updateConfig(chart) {
-	let newOptions = chart.options;
-
-	each(chart.scales, (scale) => {
-		layouts.removeBox(chart, scale);
-	});
-
-	const scaleConfig = mergeScaleConfig(chart.config, newOptions);
-
-	newOptions = mergeConfig(
-		defaults,
-		defaults[chart.config.type],
-		newOptions);
-
-	chart.options = chart.config.options = newOptions;
-	chart.options.scales = scaleConfig;
-
-	chart._animationsDisabled = isAnimationDisabled(newOptions);
-}
 
 const KNOWN_POSITIONS = ['top', 'bottom', 'left', 'right', 'chartArea'];
 function positionIsHorizontal(position, axis) {
 	return position === 'top' || position === 'bottom' || (KNOWN_POSITIONS.indexOf(position) === -1 && axis === 'x');
-}
-
-function axisFromPosition(position) {
-	if (position === 'top' || position === 'bottom') {
-		return 'x';
-	}
-	if (position === 'left' || position === 'right') {
-		return 'y';
-	}
-}
-
-function determineAxis(id, scaleOptions) {
-	if (id === 'x' || id === 'y' || id === 'r') {
-		return id;
-	}
-	return scaleOptions.axis || axisFromPosition(scaleOptions.position) || id.charAt(0).toLowerCase();
 }
 
 function compare2Level(l1, l2) {
@@ -196,7 +33,7 @@ function onAnimationsComplete(context) {
 	const chart = context.chart;
 	const animationOptions = chart.options.animation;
 
-	chart._plugins.notify(chart, 'afterRender');
+	chart.notifyPlugins('afterRender');
 	callCallback(animationOptions && animationOptions.onComplete, [context], chart);
 }
 
@@ -235,7 +72,7 @@ class Chart {
 	constructor(item, config) {
 		const me = this;
 
-		config = initConfig(config);
+		this.config = config = new Config(config);
 		const initialCanvas = getCanvas(item);
 		const existingChart = Chart.getChart(initialCanvas);
 		if (existingChart) {
@@ -255,43 +92,31 @@ class Chart {
 		this.id = uid();
 		this.ctx = context;
 		this.canvas = canvas;
-		this.config = config;
 		this.width = width;
 		this.height = height;
 		this.aspectRatio = height ? width / height : null;
 		this.options = config.options;
-		this._bufferedRender = false;
 		this._layers = [];
 		this._metasets = [];
 		this.boxes = [];
 		this.currentDevicePixelRatio = undefined;
 		this.chartArea = undefined;
-		this.data = undefined;
 		this._active = [];
 		this._lastEvent = undefined;
 		/** @type {{attach?: function, detach?: function, resize?: function}} */
 		this._listeners = {};
 		this._sortedMetasets = [];
-		this._updating = false;
 		this.scales = {};
 		this.scale = undefined;
 		this._plugins = new PluginService();
 		this.$proxies = {};
 		this._hiddenIndices = {};
 		this.attached = false;
+		this._animationsDisabled = undefined;
+		this.$context = undefined;
 
 		// Add the chart instance to the global namespace
 		Chart.instances[me.id] = me;
-
-		// Define alias to the config data: `chart.data === chart.config.data`
-		Object.defineProperty(me, 'data', {
-			get() {
-				return me.config.data;
-			},
-			set(value) {
-				me.config.data = value;
-			}
-		});
 
 		if (!context || !canvas) {
 			// The given item is not a compatible context2d element, let's return before finalizing
@@ -311,6 +136,14 @@ class Chart {
 		}
 	}
 
+	get data() {
+		return this.config.data;
+	}
+
+	set data(data) {
+		this.config.data = data;
+	}
+
 	/**
 	 * @private
 	 */
@@ -318,11 +151,10 @@ class Chart {
 		const me = this;
 
 		// Before init plugin notification
-		me._plugins.notify(me, 'beforeInit');
+		me.notifyPlugins('beforeInit');
 
 		if (me.options.responsive) {
-			// Initial resize before chart draws (must be silent to preserve initial animations).
-			me.resize(true);
+			me.resize();
 		} else {
 			retinaScale(me, me.options.devicePixelRatio);
 		}
@@ -330,7 +162,7 @@ class Chart {
 		me.bindEvents();
 
 		// After init plugin notification
-		me._plugins.notify(me, 'afterInit');
+		me.notifyPlugins('afterInit');
 
 		return me;
 	}
@@ -348,7 +180,7 @@ class Chart {
 	}
 
 	clear() {
-		canvasClear(this);
+		clearCanvas(this.canvas, this.ctx);
 		return this;
 	}
 
@@ -357,7 +189,20 @@ class Chart {
 		return this;
 	}
 
-	resize(silent, width, height) {
+	/**
+	 * Resize the chart to its container or to explicit dimensions.
+	 * @param {number} [width]
+	 * @param {number} [height]
+	 */
+	resize(width, height) {
+		if (!animator.running(this)) {
+			this._resize(width, height);
+		} else {
+			this._resizeBeforeDraw = {width, height};
+		}
+	}
+
+	_resize(width, height) {
 		const me = this;
 		const options = me.options;
 		const canvas = me.canvas;
@@ -381,14 +226,12 @@ class Chart {
 
 		retinaScale(me, newRatio);
 
-		if (!silent) {
-			me._plugins.notify(me, 'resize', [newSize]);
+		me.notifyPlugins('resize', {size: newSize});
 
-			callCallback(options.onResize, [newSize], me);
+		callCallback(options.onResize, [newSize], me);
 
-			if (me.attached) {
-				me.update('resize');
-			}
+		if (me.attached) {
+			me.update('resize');
 		}
 	}
 
@@ -480,7 +323,7 @@ class Chart {
 		me.scales = scales;
 
 		each(scales, (scale) => {
-			// Set ILayoutItem parameters for backwards compatibility
+			// Set LayoutItem parameters for backwards compatibility
 			scale.fullWidth = scale.options.fullWidth;
 			scale.position = scale.options.position;
 			scale.weight = scale.options.weight;
@@ -523,11 +366,26 @@ class Chart {
 		me._sortedMetasets = metasets.slice(0).sort(compare2Level('order', 'index'));
 	}
 
+	/**
+	 * @private
+	 */
+	_removeUnreferencedMetasets() {
+		const me = this;
+		const datasets = me.data.datasets;
+		me._metasets.forEach((meta, index) => {
+			if (datasets.filter(x => x === meta._dataset).length === 0) {
+				me._destroyDatasetMeta(index);
+			}
+		});
+	}
+
 	buildOrUpdateControllers() {
 		const me = this;
 		const newControllers = [];
 		const datasets = me.data.datasets;
 		let i, ilen;
+
+		me._removeUnreferencedMetasets();
 
 		for (i = 0, ilen = datasets.length; i < ilen; i++) {
 			const dataset = datasets[i];
@@ -549,7 +407,7 @@ class Chart {
 				meta.controller.updateIndex(i);
 				meta.controller.linkScales();
 			} else {
-				const controllerDefaults = defaults[type];
+				const controllerDefaults = defaults.controllers[type];
 				const ControllerClass = registry.getController(type);
 				Object.assign(ControllerClass.prototype, {
 					dataElementType: registry.getElement(controllerDefaults.dataElementType),
@@ -582,16 +440,20 @@ class Chart {
 	*/
 	reset() {
 		this._resetElements();
-		this._plugins.notify(this, 'reset');
+		this.notifyPlugins('reset');
 	}
 
 	update(mode) {
 		const me = this;
 		let i, ilen;
 
-		me._updating = true;
+		each(me.scales, (scale) => {
+			layouts.removeBox(me, scale);
+		});
 
-		updateConfig(me);
+		me.config.update(me.options);
+		me.options = me.config.options;
+		const animsDisabled = me._animationsDisabled = !me.options.animation;
 
 		me.ensureScalesHaveIDs();
 		me.buildOrUpdateScales();
@@ -600,7 +462,7 @@ class Chart {
 		// https://github.com/chartjs/Chart.js/issues/5111#issuecomment-355934167
 		me._plugins.invalidate();
 
-		if (me._plugins.notify(me, 'beforeUpdate') === false) {
+		if (me.notifyPlugins('beforeUpdate', {mode, cancellable: true}) === false) {
 			return;
 		}
 
@@ -614,15 +476,19 @@ class Chart {
 
 		me._updateLayout();
 
-		// Can only reset the new controllers after the scales have been updated
-		each(newControllers, (controller) => {
-			controller.reset();
-		});
+		// Only reset the controllers if we have animations
+		if (!animsDisabled) {
+			// Can only reset the new controllers after the scales have been updated
+			// Reset is done to get the starting point for the initial animation
+			each(newControllers, (controller) => {
+				controller.reset();
+			});
+		}
 
 		me._updateDatasets(mode);
 
 		// Do this before render so that any plugins that need final scale updates can use it
-		me._plugins.notify(me, 'afterUpdate');
+		me.notifyPlugins('afterUpdate', {mode});
 
 		me._layers.sort(compare2Level('z', '_idx'));
 
@@ -632,8 +498,6 @@ class Chart {
 		}
 
 		me.render();
-
-		me._updating = false;
 	}
 
 	/**
@@ -644,14 +508,22 @@ class Chart {
 	_updateLayout() {
 		const me = this;
 
-		if (me._plugins.notify(me, 'beforeLayout') === false) {
+		if (me.notifyPlugins('beforeLayout', {cancellable: true}) === false) {
 			return;
 		}
 
 		layouts.update(me, me.width, me.height);
 
+		const area = me.chartArea;
+		const noArea = area.width <= 0 || area.height <= 0;
+
 		me._layers = [];
 		each(me.boxes, (box) => {
+			if (noArea && box.position === 'chartArea') {
+				// Skip drawing and configuring chartArea boxes when chartArea is zero or negative
+				return;
+			}
+
 			// configure is called twice, once in core.scale.update and once here.
 			// Here the boxes are fully updated and at their final positions.
 			if (box.configure) {
@@ -664,7 +536,7 @@ class Chart {
 			item._idx = index;
 		});
 
-		me._plugins.notify(me, 'afterLayout');
+		me.notifyPlugins('afterLayout');
 	}
 
 	/**
@@ -676,7 +548,7 @@ class Chart {
 		const me = this;
 		const isFunction = typeof mode === 'function';
 
-		if (me._plugins.notify(me, 'beforeDatasetsUpdate') === false) {
+		if (me.notifyPlugins('beforeDatasetsUpdate', {mode, cancellable: true}) === false) {
 			return;
 		}
 
@@ -684,7 +556,7 @@ class Chart {
 			me._updateDataset(i, isFunction ? mode({datasetIndex: i}) : mode);
 		}
 
-		me._plugins.notify(me, 'afterDatasetsUpdate');
+		me.notifyPlugins('afterDatasetsUpdate', {mode});
 	}
 
 	/**
@@ -695,20 +567,21 @@ class Chart {
 	_updateDataset(index, mode) {
 		const me = this;
 		const meta = me.getDatasetMeta(index);
-		const args = {meta, index, mode};
+		const args = {meta, index, mode, cancellable: true};
 
-		if (me._plugins.notify(me, 'beforeDatasetUpdate', [args]) === false) {
+		if (me.notifyPlugins('beforeDatasetUpdate', args) === false) {
 			return;
 		}
 
 		meta.controller._update(mode);
 
-		me._plugins.notify(me, 'afterDatasetUpdate', [args]);
+		args.cancellable = false;
+		me.notifyPlugins('afterDatasetUpdate', args);
 	}
 
 	render() {
 		const me = this;
-		if (me._plugins.notify(me, 'beforeRender') === false) {
+		if (me.notifyPlugins('beforeRender', {cancellable: true}) === false) {
 			return;
 		}
 
@@ -725,14 +598,18 @@ class Chart {
 	draw() {
 		const me = this;
 		let i;
-
+		if (me._resizeBeforeDraw) {
+			const {width, height} = me._resizeBeforeDraw;
+			me._resize(width, height);
+			me._resizeBeforeDraw = null;
+		}
 		me.clear();
 
 		if (me.width <= 0 || me.height <= 0) {
 			return;
 		}
 
-		if (me._plugins.notify(me, 'beforeDraw') === false) {
+		if (me.notifyPlugins('beforeDraw', {cancellable: true}) === false) {
 			return;
 		}
 
@@ -751,7 +628,7 @@ class Chart {
 			layers[i].draw(me.chartArea);
 		}
 
-		me._plugins.notify(me, 'afterDraw');
+		me.notifyPlugins('afterDraw');
 	}
 
 	/**
@@ -789,7 +666,7 @@ class Chart {
 	_drawDatasets() {
 		const me = this;
 
-		if (me._plugins.notify(me, 'beforeDatasetsDraw') === false) {
+		if (me.notifyPlugins('beforeDatasetsDraw', {cancellable: true}) === false) {
 			return;
 		}
 
@@ -798,7 +675,7 @@ class Chart {
 			me._drawDataset(metasets[i]);
 		}
 
-		me._plugins.notify(me, 'afterDatasetsDraw');
+		me.notifyPlugins('afterDatasetsDraw');
 	}
 
 	/**
@@ -814,9 +691,10 @@ class Chart {
 		const args = {
 			meta,
 			index: meta.index,
+			cancellable: true
 		};
 
-		if (me._plugins.notify(me, 'beforeDatasetDraw', [args]) === false) {
+		if (me.notifyPlugins('beforeDatasetDraw', args) === false) {
 			return;
 		}
 
@@ -831,7 +709,8 @@ class Chart {
 
 		unclipArea(ctx);
 
-		me._plugins.notify(me, 'afterDatasetDraw', [args]);
+		args.cancellable = false;
+		me.notifyPlugins('afterDatasetDraw', args);
 	}
 
 	getElementsAtEventForMode(e, mode, options, useFinalPosition) {
@@ -847,7 +726,7 @@ class Chart {
 		const me = this;
 		const dataset = me.data.datasets[datasetIndex];
 		const metasets = me._metasets;
-		let meta = metasets.filter(x => x._dataset === dataset).pop();
+		let meta = metasets.filter(x => x && x._dataset === dataset).pop();
 
 		if (!meta) {
 			meta = metasets[datasetIndex] = {
@@ -858,7 +737,7 @@ class Chart {
 				hidden: null,			// See isDatasetVisible() comment
 				xAxisID: null,
 				yAxisID: null,
-				order: dataset.order || 0,
+				order: dataset && dataset.order || 0,
 				index: datasetIndex,
 				_dataset: dataset,
 				_parsed: [],
@@ -869,16 +748,32 @@ class Chart {
 		return meta;
 	}
 
+	getContext() {
+		return this.$context || (this.$context = Object.create(null, {
+			chart: {
+				value: this
+			},
+			type: {
+				value: 'chart'
+			}
+		}));
+	}
+
 	getVisibleDatasetCount() {
 		return this.getSortedVisibleDatasetMetas().length;
 	}
 
 	isDatasetVisible(datasetIndex) {
+		const dataset = this.data.datasets[datasetIndex];
+		if (!dataset) {
+			return false;
+		}
+
 		const meta = this.getDatasetMeta(datasetIndex);
 
 		// meta.hidden is a per chart dataset hidden flag override with 3 states: if true or false,
 		// the dataset.hidden value is ignored, else if null, the dataset hidden state is returned.
-		return typeof meta.hidden === 'boolean' ? !meta.hidden : !this.data.datasets[datasetIndex].hidden;
+		return typeof meta.hidden === 'boolean' ? !meta.hidden : !dataset.hidden;
 	}
 
 	setDatasetVisibility(datasetIndex, visible) {
@@ -925,7 +820,7 @@ class Chart {
 		const me = this;
 		const meta = me._metasets && me._metasets[datasetIndex];
 
-		if (meta) {
+		if (meta && meta.controller) {
 			meta.controller._destroy();
 			delete me._metasets[datasetIndex];
 		}
@@ -933,7 +828,7 @@ class Chart {
 
 	destroy() {
 		const me = this;
-		const canvas = me.canvas;
+		const {canvas, ctx} = me;
 		let i, ilen;
 
 		me.stop();
@@ -946,13 +841,13 @@ class Chart {
 
 		if (canvas) {
 			me.unbindEvents();
-			canvasClear(me);
-			me.platform.releaseContext(me.ctx);
+			clearCanvas(canvas, ctx);
+			me.platform.releaseContext(ctx);
 			me.canvas = null;
 			me.ctx = null;
 		}
 
-		me._plugins.notify(me, 'destroy');
+		me.notifyPlugins('destroy');
 
 		delete Chart.instances[me.id];
 	}
@@ -991,7 +886,7 @@ class Chart {
 		if (me.options.responsive) {
 			listener = (width, height) => {
 				if (me.canvas) {
-					me.resize(false, width, height);
+					me.resize(width, height);
 				}
 			};
 
@@ -1050,8 +945,9 @@ class Chart {
 
 		for (i = 0, ilen = items.length; i < ilen; ++i) {
 			item = items[i];
-			if (item) {
-				this.getDatasetMeta(item.datasetIndex).controller[prefix + 'HoverStyle'](item.element, item.datasetIndex, item.index);
+			const controller = item && this.getDatasetMeta(item.datasetIndex).controller;
+			if (controller) {
+				controller[prefix + 'HoverStyle'](item.element, item.datasetIndex, item.index);
 			}
 		}
 	}
@@ -1092,21 +988,34 @@ class Chart {
 	}
 
 	/**
+	 * Calls enabled plugins on the specified hook and with the given args.
+	 * This method immediately returns as soon as a plugin explicitly returns false. The
+	 * returned value can be used, for instance, to interrupt the current action.
+	 * @param {string} hook - The name of the plugin method to call (e.g. 'beforeUpdate').
+	 * @param {Object} [args] - Extra arguments to apply to the hook call.
+	 * @returns {boolean} false if any of the plugins return false, else returns true.
+	 */
+	notifyPlugins(hook, args) {
+		return this._plugins.notify(this, hook, args);
+	}
+
+	/**
 	 * @private
 	 */
 	_updateHoverStyles(active, lastActive) {
 		const me = this;
 		const options = me.options || {};
 		const hoverOptions = options.hover;
+		const diff = (a, b) => a.filter(x => !b.some(y => x.datasetIndex === y.datasetIndex && x.index === y.index));
+		const deactivated = diff(lastActive, active);
+		const activated = diff(active, lastActive);
 
-		// Remove styling for last active (even if it may still be active)
-		if (lastActive.length) {
-			me.updateHoverStyle(lastActive, hoverOptions.mode, false);
+		if (deactivated.length) {
+			me.updateHoverStyle(deactivated, hoverOptions.mode, false);
 		}
 
-		// Built-in hover styling
-		if (active.length && hoverOptions.mode) {
-			me.updateHoverStyle(active, hoverOptions.mode, true);
+		if (activated.length && hoverOptions.mode) {
+			me.updateHoverStyle(activated, hoverOptions.mode, true);
 		}
 	}
 
@@ -1115,23 +1024,27 @@ class Chart {
 	 */
 	_eventHandler(e, replay) {
 		const me = this;
+		const args = {event: e, replay, cancellable: true};
 
-		if (me._plugins.notify(me, 'beforeEvent', [e, replay]) === false) {
+		if (me.notifyPlugins('beforeEvent', args) === false) {
 			return;
 		}
 
-		me._handleEvent(e, replay);
+		const changed = me._handleEvent(e, replay);
 
-		me._plugins.notify(me, 'afterEvent', [e, replay]);
+		args.cancellable = false;
+		me.notifyPlugins('afterEvent', args);
 
-		me.render();
+		if (changed) {
+			me.render();
+		}
 
 		return me;
 	}
 
 	/**
 	 * Handle an event
-	 * @param {IEvent} e the event to handle
+	 * @param {ChartEvent} e the event to handle
 	 * @param {boolean} [replay] - true if the event was replayed by `update`
 	 * @return {boolean} true if the chart needs to re-render
 	 * @private

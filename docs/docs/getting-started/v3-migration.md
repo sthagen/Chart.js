@@ -25,17 +25,19 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * Chart.js 3 is tree-shakeable. So if you are using it as an `npm` module in a project, you need to import and register the controllers, elements, scales and plugins you want to use. You will not have to call `register` if importing Chart.js via a `script` tag, but will not get the tree shaking benefits in this case. Here is an example of registering components:
 
 ```javascript
-import { Chart, LineController, Line, Point, LinearScale, Title } from `chart.js`
+import { Chart, LineController, LineElement, PointElement, LinearScale, Title } from `chart.js`
 
-Chart.register(LineController, Line, Point, LinearScale, Title);
+Chart.register(LineController, LineElement, PointElement, LinearScale, Title);
 
 const chart = new Chart(ctx, {
     type: 'line',
     // data: ...
     options: {
-        title: {
-            display: true,
-            text: 'Chart Title'
+        plugins: {
+            title: {
+                display: true,
+                text: 'Chart Title'
+            }
         },
         scales: {
             x: {
@@ -90,25 +92,27 @@ A number of changes were made to the configuration options passed to the `Chart`
 * `scales.[x/y]Axes.time.min` was renamed to `scales[id].min`
 * `scales.[x/y]Axes.zeroLine*` options of axes were removed. Use scriptable scale options instead.
 * The dataset option `steppedLine` was removed. Use `stepped`
-* The dataset option `tension` was removed. Use `lineTension`
 * The chart option `showLines` was renamed to `showLine` to match the dataset option.
-* Dataset options are now configured as `options[type].datasets` rather than `options.datasets[type]`
 * To override the platform class used in a chart instance, pass `platform: PlatformClass` in the config object. Note that the class should be passed, not an instance of the class.
 * `aspectRatio` defaults to 1 for doughnut, pie, polarArea, and radar charts
 * `TimeScale` does not read `t` from object data by default anymore. The default property is `x` or `y`, depending on the orientation. See [data structures](../general/data-structures.md) for details on how to change the default.
+* `tooltips` namespace was renamed to `tooltip` to match the plugin name
+* `legend`, `title` and `tooltip` namespaces were moved from `options` to `options.plugins`.
 
 #### Defaults
 
 * `global` namespace was removed from `defaults`. So `Chart.defaults.global` is now `Chart.defaults`
+* Dataset controller defaults were relocate to `controllers`. For example `Chart.defaults.line` is now `Chart.defaults.controllers.line`
 * `default` prefix was removed from defaults. For example `Chart.defaults.global.defaultColor` is now `Chart.defaults.color`
-* `defaultColor` was renamed to `color`
-* `defaultFontColor` was renamed to `font.color`
+* `defaultColor` was split to `color`, `borderColor` and `backgroundColor`
+* `defaultFontColor` was renamed to `color`
 * `defaultFontFamily` was renamed to `font.family`
 * `defaultFontSize` was renamed to `font.size`
 * `defaultFontStyle` was renamed to `font.style`
 * `defaultLineHeight` was renamed to `font.lineHeight`
 * Horizontal Bar default tooltip mode was changed from `'index'` to `'nearest'` to match vertical bar charts
 * `legend`, `title` and `tooltip` namespaces were moved from `Chart.defaults` to `Chart.defaults.plugins`.
+* `elements.line.fill` default changed from `true` to `false`.
 
 #### Scales
 
@@ -169,11 +173,11 @@ options: {
         major: {
           enabled: true
         },
+        color: (context) => context.tick && context.tick.major && '#FF0000',
         font: function(context) {
           if (context.tick && context.tick.major) {
             return {
-              style: 'bold',
-              color: '#FF0000'
+              style: 'bold'
             };
           }
         }
@@ -204,7 +208,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 
 #### Interactions
 
-* To allow DRY configuration, a root options scope for common interaction options was added. `options.hover` and `options.tooltips` now both extend from `options.interaction`. Defaults are defined at `defaults.interaction` level, so by default hover and tooltip interactions share the same mode etc.
+* To allow DRY configuration, a root options scope for common interaction options was added. `options.hover` and `options.plugins.tooltip` now both extend from `options.interaction`. Defaults are defined at `defaults.interaction` level, so by default hover and tooltip interactions share the same mode etc.
 * `interactions` are now limited to the chart area
 * `{mode: 'label'}` was replaced with `{mode: 'index'}`
 * `{mode: 'single'}` was replaced with `{mode: 'nearest', intersect: true}`
@@ -215,6 +219,7 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 
 #### Ticks
 
+* `options.gridLines.tickMarkLength` was renamed to `options.gridLines.tickLength`.
 * `options.ticks.major` and `options.ticks.minor` were replaced with scriptable options for tick fonts.
 * `Chart.Ticks.formatters.linear` was renamed to `Chart.Ticks.formatters.numeric`.
 
@@ -366,6 +371,8 @@ The following public APIs were removed.
 
 The following private APIs were removed.
 
+* `Chart._bufferedRender`
+* `Chart._updating`
 * `Chart.data.datasets[datasetIndex]._meta`
 * `DatasetController._getIndexScaleId`
 * `DatasetController._getIndexScale`
@@ -457,6 +464,7 @@ The APIs listed in this section have changed in signature or behaviour from vers
 ##### Core Controller
 
 * The first parameter to `updateHoverStyle` is now an array of objects containing the `element`, `datasetIndex`, and `index`
+* The signature or `resize` changed, the first `silent` parameter was removed.
 
 ##### Dataset Controllers
 
@@ -480,6 +488,7 @@ All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.cli
 * The second parameter to `drawPoint` is now the full options object, so `style`, `rotation`, and `radius` are no longer passed explicitly
 * `helpers.getMaximumHeight` was replaced by `helpers.dom.getMaximumSize`
 * `helpers.getMaximumWidth` was replaced by `helpers.dom.getMaximumSize`
+* `helpers.clear` was renamed to `helpers.clearCanvas` and now takes `canvas` and optionally `ctx` as parameter(s).
 
 #### Platform
 
@@ -487,3 +496,11 @@ All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.cli
 * `Chart.platforms` is an object that contains two usable platform classes, `BasicPlatform` and `DomPlatform`. It also contains `BasePlatform`, a class that all platforms must extend from.
 * If the canvas passed in is an instance of `OffscreenCanvas`, the `BasicPlatform` is automatically used.
 * `isAttached` method was added to platform.
+
+#### IPlugin interface
+
+* All plugin hooks have unified signature with 3 arguments: `chart`, `args` and `options`. This means change in signature for these hooks: `beforeInit`, `afterInit`, `reset`, `beforeLayout`, `afterLayout`, `beforeRender`, `afterRender`, `beforeDraw`, `afterDraw`, `beforeDatasetsDraw`, `afterDatasetsDraw`, `beforeEvent`, `afterEvent`, `resize`, `destroy`.
+* `afterDatasetsUpdate`, `afterUpdate`, `beforeDatasetsUpdate`, and `beforeUpdate` now receive `args` object as second argument. `options` argument is always the last and thus was moved from 2nd to 3rd place.
+* `afterEvent` and `beforeEvent` now receive a wrapped `event` as the `event` property of the second argument. The native event is available via `args.event.native`.
+* Initial `resize` is no longer silent. Meaning that `resize` event can fire between `beforeInit` and `afterInit`
+* New hooks: `install`, `start`, `stop`, and `uninstall`

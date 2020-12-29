@@ -16,10 +16,9 @@ module.exports = {
 			]
 		},
 		options: {
-			legend: false,
-			title: false,
 			elements: {
 				line: {
+					fill: true,
 					backgroundColor: '#00ff00'
 				},
 				point: {
@@ -32,6 +31,12 @@ module.exports = {
 			scales: {
 				x: {display: false},
 				y: {display: false}
+			},
+			plugins: {
+				legend: false,
+				title: false,
+				tooltip: false,
+				filler: true
 			}
 		}
 	},

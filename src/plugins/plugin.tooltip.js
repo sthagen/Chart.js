@@ -5,9 +5,10 @@ import {valueOrDefault, each, noop, isNullOrUndef, isArray, _elementsEqual, merg
 import {getRtlAdapter, overrideTextDirection, restoreTextDirection} from '../helpers/helpers.rtl';
 import {distanceBetweenPoints} from '../helpers/helpers.math';
 import {toFont} from '../helpers/helpers.options';
+import {drawPoint} from '../helpers';
 
 /**
- * @typedef { import("../platform/platform.base").IEvent } IEvent
+ * @typedef { import("../platform/platform.base").ChartEvent } ChartEvent
  */
 
 const positioners = {
@@ -382,6 +383,7 @@ export class Tooltip extends Element {
 		this.caretX = undefined;
 		this.caretY = undefined;
 		this.labelColors = undefined;
+		this.labelPointStyles = undefined;
 		this.labelTextColors = undefined;
 
 		this.initialize();
@@ -390,7 +392,8 @@ export class Tooltip extends Element {
 	initialize() {
 		const me = this;
 		const chartOpts = me._chart.options;
-		me.options = resolveOptions(chartOpts.tooltips, chartOpts.font);
+		me.options = resolveOptions(chartOpts.plugins.tooltip, chartOpts.font);
+		me._cachedAnimations = undefined;
 	}
 
 	/**
@@ -485,6 +488,7 @@ export class Tooltip extends Element {
 		const options = me.options;
 		const data = me._chart.data;
 		const labelColors = [];
+		const labelPointStyles = [];
 		const labelTextColors = [];
 		let tooltipItems = [];
 		let i, len;
@@ -506,10 +510,12 @@ export class Tooltip extends Element {
 		// Determine colors for boxes
 		each(tooltipItems, (context) => {
 			labelColors.push(options.callbacks.labelColor.call(me, context));
+			labelPointStyles.push(options.callbacks.labelPointStyle.call(me, context));
 			labelTextColors.push(options.callbacks.labelTextColor.call(me, context));
 		});
 
 		me.labelColors = labelColors;
+		me.labelPointStyles = labelPointStyles;
 		me.labelTextColors = labelTextColors;
 		me.dataPoints = tooltipItems;
 		return tooltipItems;
@@ -647,7 +653,7 @@ export class Tooltip extends Element {
 			titleFont = options.titleFont;
 			titleSpacing = options.titleSpacing;
 
-			ctx.fillStyle = options.titleFont.color;
+			ctx.fillStyle = options.titleColor;
 			ctx.font = titleFont.string;
 
 			for (i = 0; i < length; ++i) {
@@ -668,24 +674,48 @@ export class Tooltip extends Element {
 		const me = this;
 		const options = me.options;
 		const labelColors = me.labelColors[i];
+		const labelPointStyle = me.labelPointStyles[i];
 		const {boxHeight, boxWidth, bodyFont} = options;
 		const colorX = getAlignedX(me, 'left');
 		const rtlColorX = rtlHelper.x(colorX);
 		const yOffSet = boxHeight < bodyFont.size ? (bodyFont.size - boxHeight) / 2 : 0;
 		const colorY = pt.y + yOffSet;
 
-		// Fill a white rect so that colours merge nicely if the opacity is < 1
-		ctx.fillStyle = options.multiKeyBackground;
-		ctx.fillRect(rtlHelper.leftForLtr(rtlColorX, boxWidth), colorY, boxWidth, boxHeight);
+		if (options.usePointStyle) {
+			const drawOptions = {
+				radius: Math.min(boxWidth, boxHeight) / 2, // fit the circle in the box
+				pointStyle: labelPointStyle.pointStyle,
+				rotation: labelPointStyle.rotation,
+				borderWidth: 1
+			};
+			// Recalculate x and y for drawPoint() because its expecting
+			// x and y to be center of figure (instead of top left)
+			const centerX = rtlHelper.leftForLtr(rtlColorX, boxWidth) + boxWidth / 2;
+			const centerY = colorY + boxHeight / 2;
 
-		// Border
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = labelColors.borderColor;
-		ctx.strokeRect(rtlHelper.leftForLtr(rtlColorX, boxWidth), colorY, boxWidth, boxHeight);
+			// Fill the point with white so that colours merge nicely if the opacity is < 1
+			ctx.strokeStyle = options.multiKeyBackground;
+			ctx.fillStyle = options.multiKeyBackground;
+			drawPoint(ctx, drawOptions, centerX, centerY);
 
-		// Inner square
-		ctx.fillStyle = labelColors.backgroundColor;
-		ctx.fillRect(rtlHelper.leftForLtr(rtlHelper.xPlus(rtlColorX, 1), boxWidth - 2), colorY + 1, boxWidth - 2, boxHeight - 2);
+			// Draw the point
+			ctx.strokeStyle = labelColors.borderColor;
+			ctx.fillStyle = labelColors.backgroundColor;
+			drawPoint(ctx, drawOptions, centerX, centerY);
+		} else {
+			// Fill a white rect so that colours merge nicely if the opacity is < 1
+			ctx.fillStyle = options.multiKeyBackground;
+			ctx.fillRect(rtlHelper.leftForLtr(rtlColorX, boxWidth), colorY, boxWidth, boxHeight);
+
+			// Border
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = labelColors.borderColor;
+			ctx.strokeRect(rtlHelper.leftForLtr(rtlColorX, boxWidth), colorY, boxWidth, boxHeight);
+
+			// Inner square
+			ctx.fillStyle = labelColors.backgroundColor;
+			ctx.fillRect(rtlHelper.leftForLtr(rtlHelper.xPlus(rtlColorX, 1), boxWidth - 2), colorY + 1, boxWidth - 2, boxHeight - 2);
+		}
 
 		// restore fillStyle
 		ctx.fillStyle = me.labelTextColors[i];
@@ -715,7 +745,7 @@ export class Tooltip extends Element {
 		pt.x = getAlignedX(me, bodyAlignForCalculation);
 
 		// Before body lines
-		ctx.fillStyle = bodyFont.color;
+		ctx.fillStyle = options.bodyColor;
 		each(me.beforeBody, fillLineOfText);
 
 		xLinePadding = displayColors && bodyAlignForCalculation !== 'right'
@@ -773,7 +803,7 @@ export class Tooltip extends Element {
 
 			footerFont = options.footerFont;
 
-			ctx.fillStyle = options.footerFont.color;
+			ctx.fillStyle = options.footerColor;
 			ctx.font = footerFont.string;
 
 			for (i = 0; i < length; ++i) {
@@ -949,7 +979,7 @@ export class Tooltip extends Element {
 
 	/**
 	 * Handle an event
-	 * @param {IEvent} e - The event to handle
+	 * @param {ChartEvent} e - The event to handle
 	 * @param {boolean} [replay] - This is a replayed event (from update)
 	 * @returns {boolean} true if the tooltip changed
 	 */
@@ -997,7 +1027,7 @@ export class Tooltip extends Element {
 	 * Determine if the active elements + event combination changes the
 	 * tooltip position
 	 * @param {array} active - Active elements
-	 * @param {IEvent} e - Event that triggered the position change
+	 * @param {ChartEvent} e - Event that triggered the position change
 	 * @returns {boolean} True if the position has changed
 	 */
 	_positionChanged(active, e) {
@@ -1018,7 +1048,7 @@ export default {
 	positioners,
 
 	afterInit(chart) {
-		const tooltipOpts = chart.options.tooltips;
+		const tooltipOpts = chart.options.plugins.tooltip;
 
 		if (tooltipOpts) {
 			chart.tooltip = new Tooltip({_chart: chart});
@@ -1044,7 +1074,7 @@ export default {
 			tooltip
 		};
 
-		if (chart._plugins.notify(chart, 'beforeTooltipDraw', [args]) === false) {
+		if (chart.notifyPlugins('beforeTooltipDraw', args) === false) {
 			return;
 		}
 
@@ -1052,14 +1082,14 @@ export default {
 			tooltip.draw(chart.ctx);
 		}
 
-		chart._plugins.notify(chart, 'afterTooltipDraw', [args]);
+		chart.notifyPlugins('afterTooltipDraw', args);
 	},
 
-	afterEvent(chart, e, replay) {
+	afterEvent(chart, args) {
 		if (chart.tooltip) {
 			// If the event is replayed from `update`, we should evaluate with the final positions.
-			const useFinalPosition = replay;
-			chart.tooltip.handleEvent(e, useFinalPosition);
+			const useFinalPosition = args.replay;
+			chart.tooltip.handleEvent(args.event, useFinalPosition);
 		}
 	},
 
@@ -1068,22 +1098,22 @@ export default {
 		custom: null,
 		position: 'average',
 		backgroundColor: 'rgba(0,0,0,0.8)',
+		titleColor: '#fff',
 		titleFont: {
 			style: 'bold',
-			color: '#fff',
 		},
 		titleSpacing: 2,
 		titleMarginBottom: 6,
 		titleAlign: 'left',
+		bodyColor: '#fff',
 		bodySpacing: 2,
 		bodyFont: {
-			color: '#fff',
 		},
 		bodyAlign: 'left',
+		footerColor: '#fff',
 		footerSpacing: 2,
 		footerMarginTop: 6,
 		footerFont: {
-			color: '#fff',
 			style: 'bold',
 		},
 		footerAlign: 'left',
@@ -1116,7 +1146,10 @@ export default {
 					const item = tooltipItems[0];
 					const labels = item.chart.data.labels;
 					const labelCount = labels ? labels.length : 0;
-					if (item.label) {
+
+					if (this && this.options && this.options.mode === 'dataset') {
+						return item.dataset.label || '';
+					} else if (item.label) {
 						return item.label;
 					} else if (labelCount > 0 && item.dataIndex < labelCount) {
 						return labels[item.dataIndex];
@@ -1133,6 +1166,10 @@ export default {
 			// Args are: (tooltipItem, data)
 			beforeLabel: noop,
 			label(tooltipItem) {
+				if (this && this.options && this.options.mode === 'dataset') {
+					return tooltipItem.label + ': ' + tooltipItem.formattedValue || tooltipItem.formattedValue;
+				}
+
 				let label = tooltipItem.dataset.label || '';
 
 				if (label) {
@@ -1153,7 +1190,15 @@ export default {
 				};
 			},
 			labelTextColor() {
-				return this.options.bodyFont.color;
+				return this.options.bodyColor;
+			},
+			labelPointStyle(tooltipItem) {
+				const meta = tooltipItem.chart.getDatasetMeta(tooltipItem.datasetIndex);
+				const options = meta.controller.getStyle(tooltipItem.dataIndex);
+				return {
+					pointStyle: options.pointStyle,
+					rotation: options.rotation,
+				};
 			},
 			afterLabel: noop,
 

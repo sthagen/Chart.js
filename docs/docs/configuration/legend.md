@@ -6,15 +6,15 @@ The chart legend displays data about the datasets that are appearing on the char
 
 ## Configuration options
 
-The legend configuration is passed into the `options.legend` namespace. The global options for the chart legend is defined in `Chart.defaults.plugins.legend`.
+The legend configuration is passed into the `options.plugins.legend` namespace. The global options for the chart legend is defined in `Chart.defaults.plugins.legend`.
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
 | `display` | `boolean` | `true` | Is the legend shown?
 | `position` | `string` | `'top'` | Position of the legend. [more...](#position)
 | `align` | `string` | `'center'` | Alignment of the legend. [more...](#align)
-| `maxHeight` `number` | | Maximum height of the legend, in pixels
-| `maxWidth` `number` | | Maximum width of the legend, in pixels
+| `maxHeight` | `number` | | Maximum height of the legend, in pixels
+| `maxWidth` | `number` | | Maximum width of the legend, in pixels
 | `fullWidth` | `boolean` | `true` | Marks that this box should take the full width of the canvas (pushing down other boxes). This is unlikely to need to be changed in day-to-day use.
 | `onClick` | `function` | | A callback that is called when a click event is registered on a label item. Arguments: `[event, legendItem, legend]`.
 | `onHover` | `function` | | A callback that is called when a 'mousemove' event is registered on top of a label item. Arguments: `[event, legendItem, legend]`.
@@ -51,12 +51,14 @@ The legend label configuration is nested below the legend configuration using th
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
 | `boxWidth` | `number` | `40` | Width of coloured box.
-| `boxHeight` | `number` | fontSize | Height of the coloured box.
-| `font` | `Font` | `defaults.font` | See [Fonts](../general/fonts.md)
+| `boxHeight` | `number` | `font.size` | Height of the coloured box.
+| `color` | [`Color`](../general/colors.md) | `Chart.defaults.color` | Color of label.
+| `font` | `Font` | `Chart.defaults.font` | See [Fonts](../general/fonts.md)
 | `padding` | `number` | `10` | Padding between rows of colored boxes.
 | `generateLabels` | `function` | | Generates legend items for each thing in the legend. Default implementation returns the text + styling for the color box. See [Legend Item](#legend-item-interface) for details.
 | `filter` | `function` | `null` | Filters legend items out of the legend. Receives 2 parameters, a [Legend Item](#legend-item-interface) and the chart data.
 | `sort` | `function` | `null` | Sorts legend items. Receives 3 parameters, two [Legend Items](#legend-item-interface) and the chart data.
+| `pointStyle` | | | If specified, this style of point is used for the legend. Only used if `usePointStyle` is true.
 | `usePointStyle` | `boolean` | `false` | Label style will match corresponding point style (size is based on the minimum value between boxWidth and font.size).
 
 ## Legend Title Configuration
@@ -65,9 +67,10 @@ The legend title configuration is nested below the legend configuration using th
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
+| `color` | [`Color`](../general/colors.md) | `Chart.defaults.color` | Color of text.
 | `display` | `boolean` | `false` | Is the legend title displayed.
-| `font` | `Font` | `defaults.font` | See [Fonts](../general/fonts.md)
-| `padding` | <code>number&#124;object</code> | `0` | Padding around the title. If specified as a number, it applies evenly to all sides.
+| `font` | `Font` | `Chart.defaults.font` | See [Fonts](../general/fonts.md)
+| `padding` | `number`\|`object` | `0` | Padding around the title. If specified as a number, it applies evenly to all sides.
 | `text` | `string` | | The string title.
 
 ## Legend Item Interface
@@ -78,6 +81,9 @@ Items passed to the legend `onClick` function are the ones returned from `labels
 {
     // Label that will be displayed
     text: string,
+
+    // Index of the associated dataset
+    datasetIndex: number,
 
     // Fill style of the legend box
     fillStyle: Color,
@@ -120,10 +126,12 @@ var chart = new Chart(ctx, {
     type: 'bar',
     data: data,
     options: {
-        legend: {
-            display: true,
-            labels: {
-                fontColor: 'rgb(255, 99, 132)'
+        plugins: {
+            legend: {
+                display: true,
+                labels: {
+                    color: 'rgb(255, 99, 132)'
+                }
             }
         }
     }
@@ -176,8 +184,10 @@ var chart = new Chart(ctx, {
     type: 'line',
     data: data,
     options: {
-        legend: {
-            onClick: newLegendClickHandler
+        plugins: {
+            legend: {
+                onClick: newLegendClickHandler
+            }
         }
     }
 });

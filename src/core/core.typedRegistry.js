@@ -42,10 +42,6 @@ export default class TypedRegistry {
 			return scope;
 		}
 
-		if (Object.keys(defaults.get(scope)).length) {
-			throw new Error('Can not register "' + id + '", because "defaults.' + scope + '" would collide with existing defaults');
-		}
-
 		items[id] = item;
 		registerDefaults(item, scope, parentScope);
 
@@ -74,17 +70,18 @@ export default class TypedRegistry {
 
 		if (scope && id in defaults[scope]) {
 			delete defaults[scope][id];
-		} else if (id in defaults) {
-			delete defaults[id];
 		}
 	}
 }
 
 function registerDefaults(item, scope, parentScope) {
-	// Inherit the parent's defaults
-	const itemDefaults = parentScope
-		? Object.assign({}, defaults.get(parentScope), item.defaults)
-		: item.defaults;
+	// Inherit the parent's defaults and keep existing defaults
+	const itemDefaults = Object.assign(
+		Object.create(null),
+		parentScope && defaults.get(parentScope),
+		item.defaults,
+		defaults.get(scope)
+	);
 
 	defaults.set(scope, itemDefaults);
 
@@ -95,10 +92,13 @@ function registerDefaults(item, scope, parentScope) {
 
 function routeDefaults(scope, routes) {
 	Object.keys(routes).forEach(property => {
+		const propertyParts = property.split('.');
+		const sourceName = propertyParts.pop();
+		const sourceScope = [scope].concat(propertyParts).join('.');
 		const parts = routes[property].split('.');
 		const targetName = parts.pop();
 		const targetScope = parts.join('.');
-		defaults.route(scope, property, targetScope, targetName);
+		defaults.route(sourceScope, sourceName, targetScope, targetName);
 	});
 }
 

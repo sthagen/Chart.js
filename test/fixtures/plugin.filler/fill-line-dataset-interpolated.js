@@ -39,14 +39,17 @@ module.exports = {
 		options: {
 			animation: false,
 			responsive: false,
-			legend: false,
-			title: false,
-			line: {
-				datasets: {
-					lineTension: 0.4,
+			datasets: {
+				line: {
+					tension: 0.4,
 					borderWidth: 1,
 					pointRadius: 1.5,
 				}
+			},
+			plugins: {
+				legend: false,
+				title: false,
+				tooltip: false
 			},
 			scales: {
 				x: {

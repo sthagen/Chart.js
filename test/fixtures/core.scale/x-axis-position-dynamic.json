@@ -16,8 +16,6 @@
             }]
         },
         "options": {
-            "legend": false,
-            "title": false,
             "scales": {
                 "x": {
                     "position": {
@@ -31,7 +29,7 @@
                         "drawOnChartArea": false
                     },
                     "ticks": {
-                        "display": false
+                        "display": true
                     }
                 },
                 "y": {
@@ -44,7 +42,7 @@
                         "drawOnChartArea": false
                     },
                     "ticks": {
-                        "display": false
+                        "display": true
                     }
                 }
             }
@@ -54,6 +52,7 @@
         "canvas": {
             "height": 256,
             "width": 512
-        }
+        },
+        "spriteText": true
     }
 }

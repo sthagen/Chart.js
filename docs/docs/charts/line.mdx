@@ -25,13 +25,14 @@ export const ExampleChart = () => {
           data: [65, 59, 80, 81, 56, 55, 40],
           fill: false,
           borderColor: 'rgb(75, 192, 192)',
-          lineTension: 0.1
+          tension: 0.1
         }]
       },
       options: {
       }
     };
-    new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    const chart = new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    return () => chart.destroy();
   });
   return <div className="chartjs-wrapper"><canvas id="chartjs-0" className="chartjs"></canvas></div>;
 }
@@ -63,7 +64,7 @@ The line chart allows a number of properties to be specified for each dataset. T
 | [`borderWidth`](#line-styling) | `number` | Yes | - | `3`
 | [`clip`](#general) | `number`\|`object` | - | - | `undefined`
 | [`cubicInterpolationMode`](#cubicinterpolationmode) | `string` | Yes | - | `'default'`
-| [`fill`](#line-styling) | `boolean`\|`string` | Yes | - | `true`
+| [`fill`](#line-styling) | `boolean`\|`string` | Yes | - | `false`
 | [`hoverBackgroundColor`](#line-styling) | [`Color`](../general/colors.md) | Yes | - | `undefined`
 | [`hoverBorderCapStyle`](#line-styling) | `string` | Yes | - | `undefined`
 | [`hoverBorderColor`](#line-styling) | [`Color`](../general/colors.md) | Yes | - | `undefined`
@@ -72,7 +73,7 @@ The line chart allows a number of properties to be specified for each dataset. T
 | [`hoverBorderJoinStyle`](#line-styling) | `string` | Yes | - | `undefined`
 | [`hoverBorderWidth`](#line-styling) | `number` | Yes | - | `undefined`
 | [`label`](#general) | `string` | - | - | `''`
-| [`lineTension`](#line-styling) | `number` | - | - | `0`
+| [`tension`](#line-styling) | `number` | - | - | `0`
 | [`order`](#general) | `number` | - | - | `0`
 | [`pointBackgroundColor`](#point-styling) | `Color` | Yes | Yes | `'rgba(0, 0, 0, 0.1)'`
 | [`pointBorderColor`](#point-styling) | `Color` | Yes | Yes | `'rgba(0, 0, 0, 0.1)'`
@@ -131,7 +132,7 @@ The style of the line can be controlled with the following properties:
 | `borderJoinStyle` | Line joint style. See [MDN](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin).
 | `borderWidth` | The line width (in pixels).
 | `fill` | How to fill the area under the line. See [area charts](area.md).
-| `lineTension` | Bezier curve tension of the line. Set to 0 to draw straightlines. This option is ignored if monotone cubic interpolation is used.
+| `tension` | Bezier curve tension of the line. Set to 0 to draw straightlines. This option is ignored if monotone cubic interpolation is used.
 | `showLine` | If false, the line is not drawn for this dataset.
 | `spanGaps` | If true, lines will be drawn between points with no or null data. If false, points with `NaN` data will create a break in the line. Can also be a number specifying the maximum gap length to span. The unit of the value depends on the scale used.
 
@@ -171,7 +172,7 @@ The following values are supported for `stepped`.
 * `'after'`: Step-after Interpolation
 * `'middle'`: Step-middle Interpolation
 
-If the `stepped` value is set to anything other than false, `lineTension` will be ignored.
+If the `stepped` value is set to anything other than false, `tension` will be ignored.
 
 ## Configuration Options
 
@@ -184,12 +185,12 @@ The line chart defines the following configuration options. These options are me
 
 ## Default Options
 
-It is common to want to apply a configuration setting to all created line charts. The global line chart settings are stored in `Chart.defaults.line`. Changing the global options only affects charts created after the change. Existing charts are not changed.
+It is common to want to apply a configuration setting to all created line charts. The global line chart settings are stored in `Chart.defaults.controllers.line`. Changing the global options only affects charts created after the change. Existing charts are not changed.
 
 For example, to configure all line charts with `spanGaps = true` you would do:
 
 ```javascript
-Chart.defaults.line.spanGaps = true;
+Chart.defaults.controllers.line.spanGaps = true;
 ```
 
 ## Data Structure

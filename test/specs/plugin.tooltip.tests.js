@@ -51,9 +51,11 @@ describe('Plugin.Tooltip', function() {
 					labels: ['Point 1', 'Point 2', 'Point 3']
 				},
 				options: {
-					tooltips: {
-						mode: 'index',
-						intersect: false,
+					plugins: {
+						tooltip: {
+							mode: 'index',
+							intersect: false,
+						}
 					},
 					hover: {
 						mode: 'index',
@@ -75,9 +77,9 @@ describe('Plugin.Tooltip', function() {
 				expect(tooltip.options.yPadding).toEqual(6);
 				expect(tooltip.xAlign).toEqual('left');
 				expect(tooltip.yAlign).toEqual('center');
+				expect(tooltip.options.bodyColor).toEqual('#fff');
 
 				expect(tooltip.options.bodyFont).toEqual(jasmine.objectContaining({
-					color: '#fff',
 					family: defaults.font.family,
 					style: defaults.font.style,
 					size: defaults.font.size,
@@ -88,8 +90,8 @@ describe('Plugin.Tooltip', function() {
 					bodySpacing: 2,
 				}));
 
+				expect(tooltip.options.titleColor).toEqual('#fff');
 				expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
-					color: '#fff',
 					family: defaults.font.family,
 					style: 'bold',
 					size: defaults.font.size,
@@ -101,8 +103,8 @@ describe('Plugin.Tooltip', function() {
 					titleMarginBottom: 6,
 				}));
 
+				expect(tooltip.options.footerColor).toEqual('#fff');
 				expect(tooltip.options.footerFont).toEqual(jasmine.objectContaining({
-					color: '#fff',
 					family: defaults.font.family,
 					style: 'bold',
 					size: defaults.font.size,
@@ -142,11 +144,11 @@ describe('Plugin.Tooltip', function() {
 					afterBody: [],
 					footer: [],
 					labelColors: [{
-						borderColor: defaults.color,
-						backgroundColor: defaults.color
+						borderColor: defaults.borderColor,
+						backgroundColor: defaults.backgroundColor
 					}, {
-						borderColor: defaults.color,
-						backgroundColor: defaults.color
+						borderColor: defaults.borderColor,
+						backgroundColor: defaults.backgroundColor
 					}]
 				}));
 
@@ -176,9 +178,11 @@ describe('Plugin.Tooltip', function() {
 					labels: ['Point 1', 'Point 2', 'Point 3']
 				},
 				options: {
-					tooltips: {
-						mode: 'index',
-						intersect: true
+					plugins: {
+						tooltip: {
+							mode: 'index',
+							intersect: true
+						}
 					}
 				}
 			});
@@ -219,9 +223,11 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'nearest',
-					intersect: true
+				plugins: {
+					tooltip: {
+						mode: 'nearest',
+						intersect: true
+					}
 				}
 			}
 		});
@@ -241,7 +247,6 @@ describe('Plugin.Tooltip', function() {
 			expect(tooltip.yAlign).toEqual('center');
 
 			expect(tooltip.options.bodyFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: defaults.font.style,
 				size: defaults.font.size,
@@ -253,7 +258,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -266,7 +270,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.footerFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -301,8 +304,8 @@ describe('Plugin.Tooltip', function() {
 			expect(tooltip.labelTextColors).toEqual(['#fff']);
 
 			expect(tooltip.labelColors).toEqual([{
-				borderColor: defaults.color,
-				backgroundColor: defaults.color
+				borderColor: defaults.borderColor,
+				backgroundColor: defaults.backgroundColor
 			}]);
 
 			expect(tooltip.x).toBeCloseToPixel(267);
@@ -331,44 +334,52 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index',
-					callbacks: {
-						beforeTitle: function() {
-							return 'beforeTitle';
-						},
-						title: function() {
-							return 'title';
-						},
-						afterTitle: function() {
-							return 'afterTitle';
-						},
-						beforeBody: function() {
-							return 'beforeBody';
-						},
-						beforeLabel: function() {
-							return 'beforeLabel';
-						},
-						label: function() {
-							return 'label';
-						},
-						afterLabel: function() {
-							return 'afterLabel';
-						},
-						afterBody: function() {
-							return 'afterBody';
-						},
-						beforeFooter: function() {
-							return 'beforeFooter';
-						},
-						footer: function() {
-							return 'footer';
-						},
-						afterFooter: function() {
-							return 'afterFooter';
-						},
-						labelTextColor: function() {
-							return 'labelTextColor';
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						callbacks: {
+							beforeTitle: function() {
+								return 'beforeTitle';
+							},
+							title: function() {
+								return 'title';
+							},
+							afterTitle: function() {
+								return 'afterTitle';
+							},
+							beforeBody: function() {
+								return 'beforeBody';
+							},
+							beforeLabel: function() {
+								return 'beforeLabel';
+							},
+							label: function() {
+								return 'label';
+							},
+							afterLabel: function() {
+								return 'afterLabel';
+							},
+							afterBody: function() {
+								return 'afterBody';
+							},
+							beforeFooter: function() {
+								return 'beforeFooter';
+							},
+							footer: function() {
+								return 'footer';
+							},
+							afterFooter: function() {
+								return 'afterFooter';
+							},
+							labelTextColor: function() {
+								return 'labelTextColor';
+							},
+							labelPointStyle: function() {
+								return {
+									pointStyle: 'labelPointStyle',
+									rotation: 42
+								};
+							}
 						}
 					}
 				}
@@ -390,7 +401,6 @@ describe('Plugin.Tooltip', function() {
 			expect(tooltip.yAlign).toEqual('center');
 
 			expect(tooltip.options.bodyFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: defaults.font.style,
 				size: defaults.font.size,
@@ -402,7 +412,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -414,7 +423,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.footerFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -454,11 +462,18 @@ describe('Plugin.Tooltip', function() {
 				footer: ['beforeFooter', 'footer', 'afterFooter'],
 				labelTextColors: ['labelTextColor', 'labelTextColor'],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}, {
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
+				}],
+				labelPointStyles: [{
+					pointStyle: 'labelPointStyle',
+					rotation: 42
+				}, {
+					pointStyle: 'labelPointStyle',
+					rotation: 42
 				}]
 			}));
 
@@ -486,11 +501,13 @@ describe('Plugin.Tooltip', function() {
 						type: 'linear'
 					}
 				},
-				tooltips: {
-					mode: 'index',
-					callbacks: {
-						beforeLabel: function(ctx) {
-							return ctx.dataPoint.x + ',' + ctx.dataPoint.y;
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						callbacks: {
+							beforeLabel: function(ctx) {
+								return ctx.dataPoint.x + ',' + ctx.dataPoint.y;
+							}
 						}
 					}
 				}
@@ -529,10 +546,12 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index',
-					itemSort: function(a, b) {
-						return a.datasetIndex > b.datasetIndex ? -1 : 1;
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						itemSort: function(a, b) {
+							return a.datasetIndex > b.datasetIndex ? -1 : 1;
+						}
 					}
 				}
 			}
@@ -567,11 +586,11 @@ describe('Plugin.Tooltip', function() {
 				afterBody: [],
 				footer: [],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}, {
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}]
 			}));
 
@@ -602,9 +621,11 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index',
-					reverse: true
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						reverse: true
+					}
 				}
 			}
 		});
@@ -638,11 +659,11 @@ describe('Plugin.Tooltip', function() {
 				afterBody: [],
 				footer: [],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}, {
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}]
 			}));
 
@@ -675,8 +696,10 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index'
+				plugins: {
+					tooltip: {
+						mode: 'index'
+					}
 				}
 			}
 		});
@@ -710,11 +733,11 @@ describe('Plugin.Tooltip', function() {
 				afterBody: [],
 				footer: [],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}, {
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}]
 			}));
 
@@ -746,11 +769,13 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index',
-					filter: function(tooltipItem, index, tooltipItems, data) {
-						// For testing purposes remove the first dataset that has a tooltipHidden property
-						return !data.datasets[tooltipItem.datasetIndex].tooltipHidden;
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						filter: function(tooltipItem, index, tooltipItems, data) {
+							// For testing purposes remove the first dataset that has a tooltipHidden property
+							return !data.datasets[tooltipItem.datasetIndex].tooltipHidden;
+						}
 					}
 				}
 			}
@@ -781,8 +806,8 @@ describe('Plugin.Tooltip', function() {
 				afterBody: [],
 				footer: [],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}]
 			}));
 
@@ -811,8 +836,10 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					caretPadding: 10
+				plugins: {
+					tooltip: {
+						caretPadding: 10
+					}
 				}
 			}
 		});
@@ -855,9 +882,11 @@ describe('Plugin.Tooltip', function() {
 					labels: ['Point 1', 'Point 2', 'Point 3']
 				},
 				options: {
-					tooltips: {
-						mode: 'nearest',
-						intersect: true
+					plugins: {
+						tooltip: {
+							mode: 'nearest',
+							intersect: true
+						}
 					}
 				}
 			});
@@ -909,12 +938,14 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'nearest',
-					intersect: true,
-					callbacks: {
-						title: function() {
-							return 'registering callback...';
+				plugins: {
+					tooltip: {
+						mode: 'nearest',
+						intersect: true,
+						callbacks: {
+							title: function() {
+								return 'registering callback...';
+							}
 						}
 					}
 				}
@@ -972,13 +1003,15 @@ describe('Plugin.Tooltip', function() {
 						stacked: true
 					}
 				},
-				tooltips: {
-					mode: 'nearest',
-					position: 'nearest',
-					intersect: true,
-					callbacks: {
-						title: function() {
-							return 'registering callback...';
+				plugins: {
+					tooltip: {
+						mode: 'nearest',
+						position: 'nearest',
+						intersect: true,
+						callbacks: {
+							title: function() {
+								return 'registering callback...';
+							}
 						}
 					}
 				}
@@ -1040,9 +1073,11 @@ describe('Plugin.Tooltip', function() {
 					labels: ['Point 1', 'Point 2', 'Point 3']
 				},
 				options: {
-					tooltips: {
-						mode: 'nearest',
-						position: 'test'
+					plugins: {
+						tooltip: {
+							mode: 'nearest',
+							position: 'test'
+						}
 					}
 				}
 			});
@@ -1093,8 +1128,10 @@ describe('Plugin.Tooltip', function() {
 					// without this slice center point is calculated wrong
 					animateRotate: false
 				},
-				tooltips: {
-					animation: false
+				plugins: {
+					tooltip: {
+						animation: false
+					}
 				}
 			}
 		});
@@ -1157,44 +1194,46 @@ describe('Plugin.Tooltip', function() {
 				labels: ['Point 1', 'Point 2', 'Point 3']
 			},
 			options: {
-				tooltips: {
-					mode: 'index',
-					callbacks: {
-						beforeTitle: function() {
-							return 'beforeTitle\nnewline';
-						},
-						title: function() {
-							return 'title\nnewline';
-						},
-						afterTitle: function() {
-							return 'afterTitle\nnewline';
-						},
-						beforeBody: function() {
-							return 'beforeBody\nnewline';
-						},
-						beforeLabel: function() {
-							return 'beforeLabel\nnewline';
-						},
-						label: function() {
-							return 'label';
-						},
-						afterLabel: function() {
-							return 'afterLabel\nnewline';
-						},
-						afterBody: function() {
-							return 'afterBody\nnewline';
-						},
-						beforeFooter: function() {
-							return 'beforeFooter\nnewline';
-						},
-						footer: function() {
-							return 'footer\nnewline';
-						},
-						afterFooter: function() {
-							return 'afterFooter\nnewline';
-						},
-						labelTextColor: function() {
-							return 'labelTextColor';
+				plugins: {
+					tooltip: {
+						mode: 'index',
+						callbacks: {
+							beforeTitle: function() {
+								return 'beforeTitle\nnewline';
+							},
+							title: function() {
+								return 'title\nnewline';
+							},
+							afterTitle: function() {
+								return 'afterTitle\nnewline';
+							},
+							beforeBody: function() {
+								return 'beforeBody\nnewline';
+							},
+							beforeLabel: function() {
+								return 'beforeLabel\nnewline';
+							},
+							label: function() {
+								return 'label';
+							},
+							afterLabel: function() {
+								return 'afterLabel\nnewline';
+							},
+							afterBody: function() {
+								return 'afterBody\nnewline';
+							},
+							beforeFooter: function() {
+								return 'beforeFooter\nnewline';
+							},
+							footer: function() {
+								return 'footer\nnewline';
+							},
+							afterFooter: function() {
+								return 'afterFooter\nnewline';
+							},
+							labelTextColor: function() {
+								return 'labelTextColor';
+							}
 						}
 					}
 				}
@@ -1216,7 +1255,6 @@ describe('Plugin.Tooltip', function() {
 			expect(tooltip.yAlign).toEqual('top');
 
 			expect(tooltip.options.bodyFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: defaults.font.style,
 				size: defaults.font.size,
@@ -1228,7 +1266,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -1241,7 +1278,6 @@ describe('Plugin.Tooltip', function() {
 			}));
 
 			expect(tooltip.options.footerFont).toEqual(jasmine.objectContaining({
-				color: '#fff',
 				family: defaults.font.family,
 				style: 'bold',
 				size: defaults.font.size,
@@ -1281,11 +1317,11 @@ describe('Plugin.Tooltip', function() {
 				footer: ['beforeFooter', 'newline', 'footer', 'newline', 'afterFooter', 'newline'],
 				labelTextColors: ['labelTextColor', 'labelTextColor'],
 				labelColors: [{
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}, {
-					borderColor: defaults.color,
-					backgroundColor: defaults.color
+					borderColor: defaults.borderColor,
+					backgroundColor: defaults.backgroundColor
 				}]
 			}));
 
@@ -1403,8 +1439,10 @@ describe('Plugin.Tooltip', function() {
 		var tooltip = new Tooltip({
 			_chart: {
 				options: {
-					tooltips: {
-						animation: false,
+					plugins: {
+						tooltip: {
+							animation: false,
+						}
 					}
 				}
 			}
@@ -1417,13 +1455,16 @@ describe('Plugin.Tooltip', function() {
 
 			expect(mockContext.getCalls()).toEqual(Array.prototype.concat(drawBody, [
 				{name: 'setTextAlign', args: ['left']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['title', 105, 111]},
 				{name: 'setTextAlign', args: ['left']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['label', 105, 129]},
 				{name: 'setTextAlign', args: ['left']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['footer', 105, 147]},
 				{name: 'restore', args: []}
@@ -1437,13 +1478,16 @@ describe('Plugin.Tooltip', function() {
 
 			expect(mockContext.getCalls()).toEqual(Array.prototype.concat(drawBody, [
 				{name: 'setTextAlign', args: ['right']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['title', 195, 111]},
 				{name: 'setTextAlign', args: ['right']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['label', 195, 129]},
 				{name: 'setTextAlign', args: ['right']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['footer', 195, 147]},
 				{name: 'restore', args: []}
@@ -1457,13 +1501,16 @@ describe('Plugin.Tooltip', function() {
 
 			expect(mockContext.getCalls()).toEqual(Array.prototype.concat(drawBody, [
 				{name: 'setTextAlign', args: ['center']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['title', 150, 111]},
 				{name: 'setTextAlign', args: ['center']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['label', 150, 129]},
 				{name: 'setTextAlign', args: ['center']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['footer', 150, 147]},
 				{name: 'restore', args: []}
@@ -1477,13 +1524,16 @@ describe('Plugin.Tooltip', function() {
 
 			expect(mockContext.getCalls()).toEqual(Array.prototype.concat(drawBody, [
 				{name: 'setTextAlign', args: ['right']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['title', 195, 111]},
 				{name: 'setTextAlign', args: ['center']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['label', 150, 129]},
 				{name: 'setTextAlign', args: ['left']},
+				{name: 'setTextBaseline', args: ['middle']},
 				{name: 'setFillStyle', args: ['#fff']},
 				{name: 'fillText', args: ['footer', 105, 147]},
 				{name: 'restore', args: []}

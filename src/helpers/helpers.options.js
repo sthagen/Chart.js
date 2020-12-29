@@ -2,6 +2,8 @@ import defaults from '../core/core.defaults';
 import {isArray, isObject, valueOrDefault} from './helpers.core';
 import {toFontString} from './helpers.canvas';
 
+const LINE_HEIGHT = new RegExp(/^(normal|(\d+(?:\.\d+)?)(px|em|%)?)$/);
+
 /**
  * @alias Chart.helpers.options
  * @namespace
@@ -15,7 +17,7 @@ import {toFontString} from './helpers.canvas';
  * @since 2.7.0
  */
 export function toLineHeight(value, size) {
-	const matches = ('' + value).match(/^(normal|(\d+(?:\.\d+)?)(px|em|%)?)$/);
+	const matches = ('' + value).match(LINE_HEIGHT);
 	if (!matches || matches[1] === 'normal') {
 		return size * 1.2;
 	}
@@ -65,6 +67,33 @@ export function toTRBL(value) {
 }
 
 /**
+ * Converts the given value into a TRBL corners object (similar with css border-radius).
+ * @param {number|object} value - If a number, set the value to all TRBL corner components,
+ *  else, if an object, use defined properties and sets undefined ones to 0.
+ * @returns {object} The TRBL corner values (topLeft, topRight, bottomLeft, bottomRight)
+ * @since 3.0.0
+ */
+export function toTRBLCorners(value) {
+	let tl, tr, bl, br;
+
+	if (isObject(value)) {
+		tl = numberOrZero(value.topLeft);
+		tr = numberOrZero(value.topRight);
+		bl = numberOrZero(value.bottomLeft);
+		br = numberOrZero(value.bottomRight);
+	} else {
+		tl = tr = bl = br = numberOrZero(value);
+	}
+
+	return {
+		topLeft: tl,
+		topRight: tr,
+		bottomLeft: bl,
+		bottomRight: br
+	};
+}
+
+/**
  * Converts the given value into a padding object with pre-computed width/height.
  * @param {number|object} value - If a number, set the value to all TRBL component,
  *  else, if an object, use defined properties and sets undefined ones to 0.
@@ -98,14 +127,11 @@ export function toFont(options, fallback) {
 	}
 
 	const font = {
-		color: valueOrDefault(options.color, fallback.color),
 		family: valueOrDefault(options.family, fallback.family),
 		lineHeight: toLineHeight(valueOrDefault(options.lineHeight, fallback.lineHeight), size),
-		lineWidth: valueOrDefault(options.lineWidth, fallback.lineWidth),
 		size,
 		style: valueOrDefault(options.style, fallback.style),
 		weight: valueOrDefault(options.weight, fallback.weight),
-		strokeStyle: valueOrDefault(options.strokeStyle, fallback.strokeStyle),
 		string: ''
 	};
 

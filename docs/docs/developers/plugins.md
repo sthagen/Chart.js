@@ -29,7 +29,7 @@ Plugins can also be defined directly in the chart `plugins` config (a.k.a. *inli
 ```javascript
 var chart = new Chart(ctx, {
     plugins: [{
-        beforeInit: function(chart, options) {
+        beforeInit: function(chart, args, options) {
             //..
         }
     }]
@@ -102,6 +102,16 @@ var chart = new Chart(ctx, {
         plugins: {
             p1: false   // disable plugin 'p1' for this instance
         }
+    }
+});
+```
+
+To disable all plugins for a specific chart instance, set `options.plugins` to `false`:
+
+```javascript
+var chart = new Chart(ctx, {
+    options: {
+        plugins: false // all plugins are disabled for this instance
     }
 });
 ```

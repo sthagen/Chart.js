@@ -1,4 +1,5 @@
 import Animations from './core.animations';
+import defaults from './core.defaults';
 import {isObject, merge, _merger, isArray, valueOrDefault, mergeIf, resolveObjectKey, _capitalize} from '../helpers/helpers.core';
 import {listenArrayEvents, unlistenArrayEvents} from '../helpers/helpers.collection';
 import {resolve} from '../helpers/helpers.options';
@@ -147,11 +148,66 @@ function getFirstScaleId(chart, axis) {
 	return Object.keys(scales).filter(key => scales[key].axis === axis).shift();
 }
 
+function createDatasetContext(parent, index, dataset) {
+	return Object.create(parent, {
+		active: {
+			writable: true,
+			value: false
+		},
+		dataset: {
+			value: dataset
+		},
+		datasetIndex: {
+			value: index
+		},
+		index: {
+			get() {
+				return this.datasetIndex;
+			}
+		},
+		type: {
+			value: 'dataset'
+		}
+	});
+}
+
+function createDataContext(parent, index, point, element) {
+	return Object.create(parent, {
+		active: {
+			writable: true,
+			value: false
+		},
+		dataIndex: {
+			value: index
+		},
+		dataPoint: {
+			value: point
+		},
+		element: {
+			value: element
+		},
+		index: {
+			get() {
+				return this.dataIndex;
+			}
+		},
+		type: {
+			value: 'data',
+		}
+	});
+}
+
+function clearStacks(meta, items) {
+	items = items || meta._parsed;
+	items.forEach((parsed) => {
+		delete parsed._stacks[meta.vScale.id][meta.index];
+	});
+}
+
 const optionKeys = (optionNames) => isArray(optionNames) ? optionNames : Object.keys(optionNames);
 const optionKey = (key, active) => active ? 'hover' + _capitalize(key) : key;
 const isDirectUpdateMode = (mode) => mode === 'reset' || mode === 'none';
 const cloneIfNotShared = (cached, shared) => shared ? cached : Object.assign({}, cached);
-const freezeIfShared = (values, shared) => shared ? Object.freeze(values) : values;
 
 export default class DatasetController {
 
@@ -176,6 +232,7 @@ export default class DatasetController {
 		this._drawStart = undefined;
 		this._drawCount = undefined;
 		this.enableOptionSharing = false;
+		this.$context = undefined;
 
 		this.initialize();
 	}
@@ -248,8 +305,12 @@ export default class DatasetController {
 	 * @private
 	 */
 	_destroy() {
+		const meta = this._cachedMeta;
 		if (this._data) {
 			unlistenArrayEvents(this._data, this);
+		}
+		if (meta._stacked) {
+			clearStacks(meta);
 		}
 	}
 
@@ -312,9 +373,7 @@ export default class DatasetController {
 		if (meta.stack !== dataset.stack) {
 			stackChanged = true;
 			// remove values from old stack
-			meta._parsed.forEach((parsed) => {
-				delete parsed._stacks[meta.vScale.id][meta.index];
-			});
+			clearStacks(meta);
 			meta.stack = dataset.stack;
 		}
 
@@ -335,7 +394,8 @@ export default class DatasetController {
 	configure() {
 		const me = this;
 		me._config = merge(Object.create(null), [
-			me.chart.options[me._type].datasets,
+			defaults.controllers[me._type].datasets,
+			(me.chart.options.datasets || {})[me._type],
 			me.getDataset(),
 		], {
 			merger(key, target, source) {
@@ -354,7 +414,7 @@ export default class DatasetController {
 	parse(start, count) {
 		const me = this;
 		const {_cachedMeta: meta, _data: data} = me;
-		const {iScale, vScale, _stacked} = meta;
+		const {iScale, _stacked} = meta;
 		const iAxis = iScale.axis;
 		let sorted = true;
 		let i, parsed, cur, prev;
@@ -392,9 +452,6 @@ export default class DatasetController {
 		if (_stacked) {
 			updateStacks(me, parsed);
 		}
-
-		iScale.invalidateCaches();
-		vScale.invalidateCaches();
 	}
 
 	/**
@@ -487,6 +544,13 @@ export default class DatasetController {
 	 */
 	getParsed(index) {
 		return this._cachedMeta._parsed[index];
+	}
+
+	/**
+	 * @protected
+	 */
+	getDataElement(index) {
+		return this._cachedMeta.data[index];
 	}
 
 	/**
@@ -696,14 +760,18 @@ export default class DatasetController {
 	 * @protected
 	 */
 	getContext(index, active) {
-		return {
-			chart: this.chart,
-			dataPoint: this.getParsed(index),
-			dataIndex: index,
-			dataset: this.getDataset(),
-			datasetIndex: this.index,
-			active
-		};
+		const me = this;
+		let context;
+		if (index >= 0 && index < me._cachedMeta.data.length) {
+			const element = me._cachedMeta.data[index];
+			context = element.$context ||
+				(element.$context = createDataContext(me.getContext(), index, me.getParsed(index), element));
+		} else {
+			context = me.$context || (me.$context = createDatasetContext(me.chart.getContext(), me.index, me.getDataset()));
+		}
+
+		context.active = !!active;
+		return context;
 	}
 
 	/**
@@ -749,7 +817,8 @@ export default class DatasetController {
 			// We cache options by `mode`, which can be 'active' for example. This enables us
 			// to have the 'active' element options and 'default' options to switch between
 			// when interacting.
-			cache[mode] = freezeIfShared(values, sharing);
+			// We freeze a clone of this object, so the returned values are not frozen.
+			cache[mode] = Object.freeze(Object.assign({}, values));
 		}
 
 		return values;
@@ -832,7 +901,7 @@ export default class DatasetController {
 	 * @protected
 	 */
 	includeOptions(mode, sharedOptions) {
-		return !sharedOptions || isDirectUpdateMode(mode);
+		return !sharedOptions || isDirectUpdateMode(mode) || this.chart._animationsDisabled;
 	}
 
 	/**
@@ -901,15 +970,13 @@ export default class DatasetController {
 	 */
 	_resyncElements() {
 		const me = this;
-		const meta = me._cachedMeta;
-		const numMeta = meta.data.length;
+		const numMeta = me._cachedMeta.data.length;
 		const numData = me._data.length;
 
 		if (numData > numMeta) {
 			me._insertElements(numMeta, numData - numMeta);
 		} else if (numData < numMeta) {
-			meta.data.splice(numData, numMeta - numData);
-			meta._parsed.splice(numData, numMeta - numData);
+			me._removeElements(numData, numMeta - numData);
 		}
 		// Re-parse the old elements (new elements are parsed in _insertElements)
 		me.parse(0, Math.min(numData, numMeta));
@@ -945,10 +1012,14 @@ export default class DatasetController {
 	 */
 	_removeElements(start, count) {
 		const me = this;
+		const meta = me._cachedMeta;
 		if (me._parsing) {
-			me._cachedMeta._parsed.splice(start, count);
+			const removed = meta._parsed.splice(start, count);
+			if (meta._stacked) {
+				clearStacks(meta, removed);
+			}
 		}
-		me._cachedMeta.data.splice(start, count);
+		meta.data.splice(start, count);
 	}
 
 

@@ -1,6 +1,6 @@
 import defaults from './core.defaults';
 import {each, isObject} from '../helpers/helpers.core';
-import {toPadding} from '../helpers/helpers.options';
+import {toPadding, resolve} from '../helpers/helpers.options';
 
 /**
  * @typedef { import("./core.controller").default } Chart
@@ -92,7 +92,7 @@ function updateDims(chartArea, params, layout) {
 		// this layout was already counted for, lets first reduce old size
 		chartArea[layout.pos] -= layout.size;
 	}
-	layout.size = layout.horizontal ? box.height : box.width;
+	layout.size = layout.horizontal ? Math.min(layout.height, box.height) : Math.min(layout.width, box.width);
 	chartArea[layout.pos] += layout.size;
 
 	if (box.getPadding) {
@@ -103,8 +103,8 @@ function updateDims(chartArea, params, layout) {
 		maxPadding.right = Math.max(maxPadding.right, boxPadding.right);
 	}
 
-	const newWidth = params.outerWidth - getCombinedMax(maxPadding, chartArea, 'left', 'right');
-	const newHeight = params.outerHeight - getCombinedMax(maxPadding, chartArea, 'top', 'bottom');
+	const newWidth = Math.max(0, params.outerWidth - getCombinedMax(maxPadding, chartArea, 'left', 'right'));
+	const newHeight = Math.max(0, params.outerHeight - getCombinedMax(maxPadding, chartArea, 'top', 'bottom'));
 
 	if (newWidth !== chartArea.w || newHeight !== chartArea.h) {
 		chartArea.w = newWidth;
@@ -214,8 +214,8 @@ defaults.set('layout', {
 });
 
 /**
- * @interface ILayoutItem
- * @typedef {object} ILayoutItem
+ * @interface LayoutItem
+ * @typedef {object} LayoutItem
  * @prop {string} position - The position of the item in the chart layout. Possible values are
  * 'left', 'top', 'right', 'bottom', and 'chartArea'
  * @prop {number} weight - The weight used to sort the item. Higher weights are further away from the chart area
@@ -241,7 +241,7 @@ export default {
 	 * Register a box to a chart.
 	 * A box is simply a reference to an object that requires layout. eg. Scales, Legend, Title.
 	 * @param {Chart} chart - the chart to use
-	 * @param {ILayoutItem} item - the item to add to be laid out
+	 * @param {LayoutItem} item - the item to add to be laid out
 	 */
 	addBox(chart, item) {
 		if (!chart.boxes) {
@@ -268,7 +268,7 @@ export default {
 	/**
 	 * Remove a layoutItem from a chart
 	 * @param {Chart} chart - the chart to remove the box from
-	 * @param {ILayoutItem} layoutItem - the item to remove from the layout
+	 * @param {LayoutItem} layoutItem - the item to remove from the layout
 	 */
 	removeBox(chart, layoutItem) {
 		const index = chart.boxes ? chart.boxes.indexOf(layoutItem) : -1;
@@ -280,7 +280,7 @@ export default {
 	/**
 	 * Sets (or updates) options on the given `item`.
 	 * @param {Chart} chart - the chart in which the item lives (or will be added to)
-	 * @param {ILayoutItem} item - the item to configure with the given options
+	 * @param {LayoutItem} item - the item to configure with the given options
 	 * @param {object} options - the new item options.
 	 */
 	configure(chart, item, options) {
@@ -310,13 +310,22 @@ export default {
 		}
 
 		const layoutOptions = chart.options.layout || {};
-		const padding = toPadding(layoutOptions.padding);
+		const context = {chart};
+		const padding = toPadding(resolve([layoutOptions.padding], context));
 
 		const availableWidth = width - padding.width;
 		const availableHeight = height - padding.height;
 		const boxes = buildLayoutBoxes(chart.boxes);
 		const verticalBoxes = boxes.vertical;
 		const horizontalBoxes = boxes.horizontal;
+
+		// Before any changes are made, notify boxes that an update is about to being
+		// This is used to clear any cached data (e.g. scale limits)
+		each(chart.boxes, box => {
+			if (typeof box.beforeLayout === 'function') {
+				box.beforeLayout();
+			}
+		});
 
 		// Essentially we now have any number of boxes on each of the 4 sides.
 		// Our canvas looks like the following.

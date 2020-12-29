@@ -6,6 +6,7 @@ describe('Title block tests', function() {
 	it('Should have the correct default config', function() {
 		expect(Chart.defaults.plugins.title).toEqual({
 			align: 'center',
+			color: Chart.defaults.color,
 			display: false,
 			position: 'top',
 			fullWidth: true,
@@ -129,17 +130,20 @@ describe('Title block tests', function() {
 			name: 'save',
 			args: []
 		}, {
-			name: 'setFillStyle',
-			args: ['#666']
-		}, {
 			name: 'translate',
 			args: [300, 67.2]
 		}, {
 			name: 'rotate',
 			args: [0]
 		}, {
+			name: 'setFillStyle',
+			args: ['#666']
+		}, {
 			name: 'setTextAlign',
 			args: ['center'],
+		}, {
+			name: 'setTextBaseline',
+			args: ['middle'],
 		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
@@ -184,17 +188,20 @@ describe('Title block tests', function() {
 			name: 'save',
 			args: []
 		}, {
-			name: 'setFillStyle',
-			args: ['#666']
-		}, {
 			name: 'translate',
 			args: [117.2, 250]
 		}, {
 			name: 'rotate',
 			args: [-0.5 * Math.PI]
 		}, {
+			name: 'setFillStyle',
+			args: ['#666']
+		}, {
 			name: 'setTextAlign',
 			args: ['center'],
+		}, {
+			name: 'setTextBaseline',
+			args: ['middle'],
 		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
@@ -220,17 +227,20 @@ describe('Title block tests', function() {
 			name: 'save',
 			args: []
 		}, {
-			name: 'setFillStyle',
-			args: ['#666']
-		}, {
 			name: 'translate',
 			args: [117.2, 250]
 		}, {
 			name: 'rotate',
 			args: [0.5 * Math.PI]
 		}, {
+			name: 'setFillStyle',
+			args: ['#666']
+		}, {
 			name: 'setTextAlign',
 			args: ['center'],
+		}, {
+			name: 'setTextBaseline',
+			args: ['middle'],
 		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
@@ -251,14 +261,16 @@ describe('Title block tests', function() {
 					}]
 				},
 				options: {
-					title: {
-						display: true
+					plugins: {
+						title: {
+							display: true
+						}
 					}
 				}
 			});
 			expect(chart.titleBlock.options.display).toBe(true);
 
-			chart.options.title.display = false;
+			chart.options.plugins.title.display = false;
 			chart.update();
 			expect(chart.titleBlock.options.display).toBe(false);
 		});
@@ -268,10 +280,12 @@ describe('Title block tests', function() {
 				type: 'line',
 				data: {},
 				options: {
-					title: {
-						fullWidth: true,
-						position: 'top',
-						weight: 150
+					plugins: {
+						title: {
+							fullWidth: true,
+							position: 'top',
+							weight: 150
+						}
 					}
 				}
 			});
@@ -280,9 +294,9 @@ describe('Title block tests', function() {
 			expect(chart.titleBlock.position).toBe('top');
 			expect(chart.titleBlock.weight).toBe(150);
 
-			chart.options.title.fullWidth = false;
-			chart.options.title.position = 'left';
-			chart.options.title.weight = 42;
+			chart.options.plugins.title.fullWidth = false;
+			chart.options.plugins.title.position = 'left';
+			chart.options.plugins.title.weight = 42;
 			chart.update();
 
 			expect(chart.titleBlock.fullWidth).toBe(false);
@@ -302,7 +316,7 @@ describe('Title block tests', function() {
 			});
 			expect(chart.titleBlock).not.toBe(undefined);
 
-			chart.options.title = false;
+			chart.options.plugins.title = false;
 			chart.update();
 			expect(chart.titleBlock).toBe(undefined);
 		});
@@ -317,12 +331,14 @@ describe('Title block tests', function() {
 					}]
 				},
 				options: {
-					title: false
+					plugins: {
+						title: false
+					}
 				}
 			});
 			expect(chart.titleBlock).toBe(undefined);
 
-			chart.options.title = {};
+			chart.options.plugins.title = {};
 			chart.update();
 			expect(chart.titleBlock).not.toBe(undefined);
 			expect(chart.titleBlock.options).toEqual(jasmine.objectContaining(Chart.defaults.plugins.title));

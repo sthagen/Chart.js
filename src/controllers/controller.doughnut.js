@@ -1,4 +1,5 @@
 import DatasetController from '../core/core.datasetController';
+import {formatNumber} from '../core/core.intl';
 import {isArray, valueOrDefault} from '../helpers/helpers.core';
 import {toRadians, PI, TAU, HALF_PI} from '../helpers/helpers.math';
 
@@ -77,6 +78,20 @@ export default class DoughnutController extends DatasetController {
 	}
 
 	/**
+	 * @private
+	 */
+	_getRotation() {
+		return toRadians(valueOrDefault(this._config.rotation, this.chart.options.rotation) - 90);
+	}
+
+	/**
+	 * @private
+	 */
+	_getCircumference() {
+		return toRadians(valueOrDefault(this._config.circumference, this.chart.options.circumference));
+	}
+
+	/**
 	 * Get the maximal rotation & circumference extents
 	 * across all visible datasets.
 	 */
@@ -85,19 +100,17 @@ export default class DoughnutController extends DatasetController {
 		let max = -TAU;
 
 		const me = this;
-		const opts = me.chart.options;
 
 		for (let i = 0; i < me.chart.data.datasets.length; ++i) {
 			if (me.chart.isDatasetVisible(i)) {
-				const dataset = me.chart.data.datasets[i];
-				const rotation = toRadians(valueOrDefault(dataset.rotation, opts.rotation) - 90);
-				const circumference = toRadians(valueOrDefault(dataset.circumference, opts.circumference));
+				const controller = me.chart.getDatasetMeta(i).controller;
+				const rotation = controller._getRotation();
+				const circumference = controller._getCircumference();
 
 				min = Math.min(min, rotation);
 				max = Math.max(max, rotation + circumference);
 			}
 		}
-
 
 		return {
 			rotation: min,
@@ -146,7 +159,7 @@ export default class DoughnutController extends DatasetController {
 		const me = this;
 		const opts = me.chart.options;
 		const meta = me._cachedMeta;
-		const circumference = toRadians(valueOrDefault(me._config.circumference, opts.circumference));
+		const circumference = me._getCircumference();
 		return reset && opts.animation.animateRotate ? 0 : this.chart.getDataVisibility(i) ? me.calculateCircumference(meta._parsed[i] * circumference / TAU) : 0;
 	}
 
@@ -165,7 +178,7 @@ export default class DoughnutController extends DatasetController {
 		const firstOpts = me.resolveDataElementOptions(start, mode);
 		const sharedOptions = me.getSharedOptions(firstOpts);
 		const includeOptions = me.includeOptions(mode, sharedOptions);
-		let startAngle = toRadians(valueOrDefault(me._config.rotation, opts.rotation) - 90);
+		let startAngle = me._getRotation();
 		let i;
 
 		for (i = 0; i < start; ++i) {
@@ -223,10 +236,11 @@ export default class DoughnutController extends DatasetController {
 		const meta = me._cachedMeta;
 		const chart = me.chart;
 		const labels = chart.data.labels || [];
+		const value = formatNumber(meta._parsed[index], chart.options.locale);
 
 		return {
 			label: labels[index] || '',
-			value: meta._parsed[index],
+			value,
 		};
 	}
 
@@ -332,36 +346,6 @@ DoughnutController.defaults = {
 		animateScale: false
 	},
 	aspectRatio: 1,
-	legend: {
-		labels: {
-			generateLabels(chart) {
-				const data = chart.data;
-				if (data.labels.length && data.datasets.length) {
-					return data.labels.map((label, i) => {
-						const meta = chart.getDatasetMeta(0);
-						const style = meta.controller.getStyle(i);
-
-						return {
-							text: label,
-							fillStyle: style.backgroundColor,
-							strokeStyle: style.borderColor,
-							lineWidth: style.borderWidth,
-							hidden: !chart.getDataVisibility(i),
-
-							// Extra data used for toggling the correct item
-							index: i
-						};
-					});
-				}
-				return [];
-			}
-		},
-
-		onClick(e, legendItem, legend) {
-			legend.chart.toggleDataVisibility(legendItem.index);
-			legend.chart.update();
-		}
-	},
 
 	// The percentage of the chart that we cut out of the middle.
 	cutoutPercentage: 50,
@@ -373,25 +357,57 @@ DoughnutController.defaults = {
 	circumference: 360,
 
 	// Need to override these to give a nice default
-	tooltips: {
-		callbacks: {
-			title() {
-				return '';
-			},
-			label(tooltipItem) {
-				let dataLabel = tooltipItem.label;
-				const value = ': ' + tooltipItem.formattedValue;
+	plugins: {
+		legend: {
+			labels: {
+				generateLabels(chart) {
+					const data = chart.data;
+					if (data.labels.length && data.datasets.length) {
+						return data.labels.map((label, i) => {
+							const meta = chart.getDatasetMeta(0);
+							const style = meta.controller.getStyle(i);
 
-				if (isArray(dataLabel)) {
-					// show value on first line of multiline label
-					// need to clone because we are changing the value
-					dataLabel = dataLabel.slice();
-					dataLabel[0] += value;
-				} else {
-					dataLabel += value;
+							return {
+								text: label,
+								fillStyle: style.backgroundColor,
+								strokeStyle: style.borderColor,
+								lineWidth: style.borderWidth,
+								hidden: !chart.getDataVisibility(i),
+
+								// Extra data used for toggling the correct item
+								index: i
+							};
+						});
+					}
+					return [];
 				}
+			},
 
-				return dataLabel;
+			onClick(e, legendItem, legend) {
+				legend.chart.toggleDataVisibility(legendItem.index);
+				legend.chart.update();
+			}
+		},
+		tooltip: {
+			callbacks: {
+				title() {
+					return '';
+				},
+				label(tooltipItem) {
+					let dataLabel = tooltipItem.label;
+					const value = ': ' + tooltipItem.formattedValue;
+
+					if (isArray(dataLabel)) {
+						// show value on first line of multiline label
+						// need to clone because we are changing the value
+						dataLabel = dataLabel.slice();
+						dataLabel[0] += value;
+					} else {
+						dataLabel += value;
+					}
+
+					return dataLabel;
+				}
 			}
 		}
 	}

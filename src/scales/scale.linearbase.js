@@ -1,6 +1,7 @@
 import {isNullOrUndef, valueOrDefault} from '../helpers/helpers.core';
 import {almostEquals, almostWhole, log10, _decimalPlaces, _setMinAndMaxByKey, sign} from '../helpers/helpers.math';
 import Scale from '../core/core.scale';
+import {formatNumber} from '../core/core.intl';
 
 /**
  * Implementation of the nice number algorithm used in determining where axis labels will go
@@ -125,68 +126,33 @@ export default class LinearScaleBase extends Scale {
 
 	handleTickRangeOptions() {
 		const me = this;
-		const opts = me.options;
+		const {beginAtZero, stacked} = me.options;
+		const {minDefined, maxDefined} = me.getUserBounds();
+		let {min, max} = me;
 
-		// If we are forcing it to begin at 0, but 0 will already be rendered on the chart,
-		// do nothing since that would make the chart weird. If the user really wants a weird chart
-		// axis, they can manually override it
-		if (opts.beginAtZero) {
-			const minSign = sign(me.min);
-			const maxSign = sign(me.max);
+		const setMin = v => (min = minDefined ? min : v);
+		const setMax = v => (max = maxDefined ? max : v);
+
+		if (beginAtZero || stacked) {
+			const minSign = sign(min);
+			const maxSign = sign(max);
 
 			if (minSign < 0 && maxSign < 0) {
-				// move the top up to 0
-				me.max = 0;
+				setMax(0);
 			} else if (minSign > 0 && maxSign > 0) {
-				// move the bottom down to 0
-				me.min = 0;
+				setMin(0);
 			}
 		}
 
-		const setMin = opts.min !== undefined || opts.suggestedMin !== undefined;
-		const setMax = opts.max !== undefined || opts.suggestedMax !== undefined;
+		if (min === max) {
+			setMax(max + 1);
 
-		if (opts.min !== undefined) {
-			me.min = opts.min;
-		} else if (opts.suggestedMin !== undefined) {
-			if (me.min === null) {
-				me.min = opts.suggestedMin;
-			} else {
-				me.min = Math.min(me.min, opts.suggestedMin);
+			if (!beginAtZero) {
+				setMin(min - 1);
 			}
 		}
-
-		if (opts.max !== undefined) {
-			me.max = opts.max;
-		} else if (opts.suggestedMax !== undefined) {
-			if (me.max === null) {
-				me.max = opts.suggestedMax;
-			} else {
-				me.max = Math.max(me.max, opts.suggestedMax);
-			}
-		}
-
-		if (setMin !== setMax) {
-			// We set the min or the max but not both.
-			// So ensure that our range is good
-			// Inverted or 0 length range can happen when
-			// min is set, and no datasets are visible
-			if (me.min >= me.max) {
-				if (setMin) {
-					me.max = me.min + 1;
-				} else {
-					me.min = me.max - 1;
-				}
-			}
-		}
-
-		if (me.min === me.max) {
-			me.max++;
-
-			if (!opts.beginAtZero) {
-				me.min--;
-			}
-		}
+		me.min = min;
+		me.max = max;
 	}
 
 	getTickLimit() {
@@ -238,9 +204,11 @@ export default class LinearScaleBase extends Scale {
 		};
 		const ticks = generateTicks(numericGeneratorOptions, me);
 
-		// At this point, we need to update our max and min given the tick values since we have expanded the
-		// range of the scale
-		_setMinAndMaxByKey(ticks, me, 'value');
+		// At this point, we need to update our max and min given the tick values,
+		// since we probably have expanded the range of the scale
+		if (opts.bounds === 'ticks') {
+			_setMinAndMaxByKey(ticks, me, 'value');
+		}
 
 		if (opts.reverse) {
 			ticks.reverse();
@@ -277,6 +245,6 @@ export default class LinearScaleBase extends Scale {
 	}
 
 	getLabelForValue(value) {
-		return new Intl.NumberFormat(this.options.locale).format(value);
+		return formatNumber(value, this.options.locale);
 	}
 }

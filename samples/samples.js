@@ -22,6 +22,9 @@
 		}, {
 			title: 'Floating',
 			path: 'charts/bar/float.html'
+		}, {
+			title: 'Border Radius',
+			path: 'charts/bar/border-radius.html'
 		}]
 	}, {
 		title: 'Line charts',
@@ -88,6 +91,9 @@
 		}, {
 			title: 'Radar',
 			path: 'charts/radar.html'
+		}, {
+			title: 'Radar skip points',
+			path: 'charts/radar-skip-points.html'
 		}, {
 			title: 'Combo bar/line',
 			path: 'charts/combo-bar-line.html'
@@ -192,7 +198,7 @@
 			path: 'tooltips/positioning.html'
 		}, {
 			title: 'Custom Positioning',
-			path: 'tooltips/position-custom.html'
+			path: 'tooltips/positioning-custom.html'
 		}, {
 			title: 'Interactions',
 			path: 'tooltips/interactions.html'
@@ -202,6 +208,9 @@
 		}, {
 			title: 'Border',
 			path: 'tooltips/border.html'
+		}, {
+			title: 'Point style',
+			path: 'tooltips/point-style.html'
 		}, {
 			title: 'HTML tooltips (line)',
 			path: 'tooltips/custom-line.html'

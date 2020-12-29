@@ -1,14 +1,14 @@
 import defaults from './core.defaults';
 import Element from './core.element';
-import {_alignPixel, _measureText} from '../helpers/helpers.canvas';
-import {callback as call, each, isArray, isFinite, isNullOrUndef, isObject, valueOrDefault} from '../helpers/helpers.core';
+import {_alignPixel, _measureText, renderText} from '../helpers/helpers.canvas';
+import {callback as call, each, finiteOrDefault, isArray, isFinite, isNullOrUndef, isObject, valueOrDefault} from '../helpers/helpers.core';
 import {_factorize, toDegrees, toRadians, _int16Range, HALF_PI} from '../helpers/helpers.math';
 import {toFont, resolve, toPadding} from '../helpers/helpers.options';
 import Ticks from './core.ticks';
 
 /**
  * @typedef { import("./core.controller").default } Chart
- * @typedef {{value:any, label?:string, major?:boolean}} Tick
+ * @typedef {{value:any, label?:string, major?:boolean, $context?:any}} Tick
  */
 
 defaults.set('scale', {
@@ -17,15 +17,23 @@ defaults.set('scale', {
 	reverse: false,
 	beginAtZero: false,
 
+	/**
+	 * Scale boundary strategy (bypassed by min/max time options)
+	 * - `data`: make sure data are fully visible, ticks outside are removed
+	 * - `ticks`: make sure ticks are fully visible, data outside are truncated
+	 * @see https://github.com/chartjs/Chart.js/pull/4556
+	 * @since 3.0.0
+	 */
+	bounds: 'ticks',
+
 	// grid line settings
 	gridLines: {
 		display: true,
-		color: 'rgba(0,0,0,0.1)',
 		lineWidth: 1,
 		drawBorder: true,
 		drawOnChartArea: true,
 		drawTicks: true,
-		tickMarkLength: 10,
+		tickLength: 10,
 		offsetGridLines: false,
 		borderDash: [],
 		borderDashOffset: 0.0
@@ -51,8 +59,8 @@ defaults.set('scale', {
 		minRotation: 0,
 		maxRotation: 50,
 		mirror: false,
-		lineWidth: 0,
-		strokeStyle: '',
+		textStrokeWidth: 0,
+		textStrokeColor: '',
 		padding: 0,
 		display: true,
 		autoSkip: true,
@@ -66,6 +74,10 @@ defaults.set('scale', {
 		crossAlign: 'near',
 	}
 });
+
+defaults.route('scale.ticks', 'color', '', 'color');
+defaults.route('scale.gridLines', 'color', '', 'borderColor');
+defaults.route('scale.scaleLabel', 'color', '', 'color');
 
 /**
  * Returns a new array containing numItems from arr
@@ -138,7 +150,7 @@ function garbageCollect(caches, length) {
  * @param {object} options
  */
 function getTickMarkLength(options) {
-	return options.drawTicks ? options.tickMarkLength : 0;
+	return options.drawTicks ? options.tickLength : 0;
 }
 
 /**
@@ -269,6 +281,31 @@ function skip(ticks, newTicks, spacing, majorStart, majorEnd) {
 	}
 }
 
+function createScaleContext(parent, scale) {
+	return Object.create(parent, {
+		scale: {
+			value: scale
+		},
+		type: {
+			value: 'scale'
+		}
+	});
+}
+
+function createTickContext(parent, index, tick) {
+	return Object.create(parent, {
+		tick: {
+			value: tick
+		},
+		index: {
+			value: index
+		},
+		type: {
+			value: 'tick'
+		}
+	});
+}
+
 export default class Scale extends Element {
 
 	// eslint-disable-next-line max-statements
@@ -342,9 +379,13 @@ export default class Scale extends Element {
 		this._reversePixels = false;
 		this._userMax = undefined;
 		this._userMin = undefined;
+		this._suggestedMax = undefined;
+		this._suggestedMin = undefined;
 		this._ticksLength = 0;
 		this._borderValue = 0;
 		this._cache = {};
+		this._dataLimitsCached = false;
+		this.$context = undefined;
 	}
 
 	/**
@@ -360,6 +401,8 @@ export default class Scale extends Element {
 		// parse min/max value, so we can properly determine min/max for other scales
 		me._userMin = me.parse(options.min);
 		me._userMax = me.parse(options.max);
+		me._suggestedMin = me.parse(options.suggestedMin);
+		me._suggestedMax = me.parse(options.suggestedMax);
 	}
 
 	/**
@@ -378,15 +421,17 @@ export default class Scale extends Element {
 	 * @since 3.0
 	 */
 	getUserBounds() {
-		let min = this._userMin;
-		let max = this._userMax;
-		if (isNullOrUndef(min) || isNaN(min)) {
-			min = Number.POSITIVE_INFINITY;
-		}
-		if (isNullOrUndef(max) || isNaN(max)) {
-			max = Number.NEGATIVE_INFINITY;
-		}
-		return {min, max, minDefined: isFinite(min), maxDefined: isFinite(max)};
+		let {_userMin, _userMax, _suggestedMin, _suggestedMax} = this;
+		_userMin = finiteOrDefault(_userMin, Number.POSITIVE_INFINITY);
+		_userMax = finiteOrDefault(_userMax, Number.NEGATIVE_INFINITY);
+		_suggestedMin = finiteOrDefault(_suggestedMin, Number.POSITIVE_INFINITY);
+		_suggestedMax = finiteOrDefault(_suggestedMax, Number.NEGATIVE_INFINITY);
+		return {
+			min: finiteOrDefault(_userMin, _suggestedMin),
+			max: finiteOrDefault(_userMax, _suggestedMax),
+			minDefined: isFinite(_userMin),
+			maxDefined: isFinite(_userMax)
+		};
 	}
 
 	/**
@@ -416,11 +461,10 @@ export default class Scale extends Element {
 			}
 		}
 
-		return {min, max};
-	}
-
-	invalidateCaches() {
-		this._cache = {};
+		return {
+			min: finiteOrDefault(min, finiteOrDefault(max, min)),
+			max: finiteOrDefault(max, finiteOrDefault(min, max))
+		};
 	}
 
 	/**
@@ -453,6 +497,12 @@ export default class Scale extends Element {
 	getLabels() {
 		const data = this.chart.data;
 		return this.options.labels || (this.isHorizontal() ? data.xLabels : data.yLabels) || data.labels || [];
+	}
+
+	// When a new layout is created, reset the data limits cache
+	beforeLayout() {
+		this._cache = {};
+		this._dataLimitsCached = false;
 	}
 
 	// These methods are ordered by lifecycle. Utilities then follow.
@@ -500,9 +550,12 @@ export default class Scale extends Element {
 		me.afterSetDimensions();
 
 		// Data min/max
-		me.beforeDataLimits();
-		me.determineDataLimits();
-		me.afterDataLimits();
+		if (!me._dataLimitsCached) {
+			me.beforeDataLimits();
+			me.determineDataLimits();
+			me.afterDataLimits();
+			me._dataLimitsCached = true;
+		}
 
 		me.beforeBuildTicks();
 
@@ -602,18 +655,24 @@ export default class Scale extends Element {
 		call(this.options.afterSetDimensions, [this]);
 	}
 
+	_callHooks(name) {
+		const me = this;
+		me.chart.notifyPlugins(name, me.getContext());
+		call(me.options[name], [me]);
+	}
+
 	// Data limits
 	beforeDataLimits() {
-		call(this.options.beforeDataLimits, [this]);
+		this._callHooks('beforeDataLimits');
 	}
 	determineDataLimits() {}
 	afterDataLimits() {
-		call(this.options.afterDataLimits, [this]);
+		this._callHooks('afterDataLimits');
 	}
 
 	//
 	beforeBuildTicks() {
-		call(this.options.beforeBuildTicks, [this]);
+		this._callHooks('beforeBuildTicks');
 	}
 	/**
 	 * @return {object[]} the ticks
@@ -622,7 +681,7 @@ export default class Scale extends Element {
 		return [];
 	}
 	afterBuildTicks() {
-		call(this.options.afterBuildTicks, [this]);
+		this._callHooks('afterBuildTicks');
 	}
 
 	beforeTickToLabelConversion() {
@@ -1043,13 +1102,16 @@ export default class Scale extends Element {
 	 * @protected
 	 */
 	getContext(index) {
-		const ticks = this.ticks || [];
-		return {
-			chart: this.chart,
-			scale: this,
-			tick: ticks[index],
-			index
-		};
+		const me = this;
+		const ticks = me.ticks || [];
+
+		if (index >= 0 && index < ticks.length) {
+			const tick = ticks[index];
+			return tick.$context ||
+				(tick.$context = createTickContext(me.getContext(), index, tick));
+		}
+		return me.$context ||
+			(me.$context = createScaleContext(me.chart.getContext(), me));
 	}
 
 	/**
@@ -1213,6 +1275,11 @@ export default class Scale extends Element {
 			const borderDash = gridLines.borderDash || [];
 			const borderDashOffset = resolve([gridLines.borderDashOffset], context, i);
 
+			const tickWidth = resolve([gridLines.tickWidth, lineWidth], context, i);
+			const tickColor = resolve([gridLines.tickColor, lineColor], context, i);
+			const tickBorderDash = gridLines.tickBorderDash || borderDash;
+			const tickBorderDashOffset = resolve([gridLines.tickBorderDashOffset, borderDashOffset], context, i);
+
 			lineValue = getPixelForGridLine(me, i, offsetGridLines);
 
 			// Skip if the pixel is out of the range
@@ -1241,6 +1308,10 @@ export default class Scale extends Element {
 				color: lineColor,
 				borderDash,
 				borderDashOffset,
+				tickWidth,
+				tickColor,
+				tickBorderDash,
+				tickBorderDashOffset,
 			});
 		}
 
@@ -1320,6 +1391,9 @@ export default class Scale extends Element {
 			lineHeight = font.lineHeight;
 			lineCount = isArray(label) ? label.length : 1;
 			const halfCount = lineCount / 2;
+			const color = resolve([optionTicks.color], me.getContext(i), i);
+			const strokeColor = resolve([optionTicks.textStrokeColor], me.getContext(i), i);
+			const strokeWidth = resolve([optionTicks.textStrokeWidth], me.getContext(i), i);
 
 			if (isHorizontal) {
 				x = pixel;
@@ -1333,7 +1407,8 @@ export default class Scale extends Element {
 					} else {
 						textOffset = (-1 * labelSizes.highest.height) + (0.5 * lineHeight);
 					}
-				} else if (position === 'bottom') {
+				} else {
+					// eslint-disable-next-line no-lonely-if
 					if (crossAlign === 'near' || rotation !== 0) {
 						textOffset = Math.sin(rotation) * halfCount * lineHeight;
 						textOffset += (rotation === 0 ? 0.5 : Math.cos(rotation) * halfCount) * lineHeight;
@@ -1350,14 +1425,16 @@ export default class Scale extends Element {
 			}
 
 			items.push({
-				x,
-				y,
 				rotation,
 				label,
 				font,
+				color,
+				strokeColor,
+				strokeWidth,
 				textOffset,
 				textAlign,
 				textBaseline,
+				translation: [x, y]
 			});
 		}
 
@@ -1452,10 +1529,9 @@ export default class Scale extends Element {
 		if (gridLines.display) {
 			for (i = 0, ilen = items.length; i < ilen; ++i) {
 				const item = items[i];
-				const width = item.width;
-				const color = item.color;
+				const {color, tickColor, tickWidth, width} = item;
 
-				if (width && color) {
+				if (width && color && gridLines.drawOnChartArea) {
 					ctx.save();
 					ctx.lineWidth = width;
 					ctx.strokeStyle = color;
@@ -1465,17 +1541,24 @@ export default class Scale extends Element {
 					}
 
 					ctx.beginPath();
+					ctx.moveTo(item.x1, item.y1);
+					ctx.lineTo(item.x2, item.y2);
+					ctx.stroke();
+					ctx.restore();
+				}
 
-					if (gridLines.drawTicks) {
-						ctx.moveTo(item.tx1, item.ty1);
-						ctx.lineTo(item.tx2, item.ty2);
+				if (tickWidth && tickColor && gridLines.drawTicks) {
+					ctx.save();
+					ctx.lineWidth = tickWidth;
+					ctx.strokeStyle = tickColor;
+					if (ctx.setLineDash) {
+						ctx.setLineDash(item.tickBorderDash);
+						ctx.lineDashOffset = item.tickBorderDashOffset;
 					}
 
-					if (gridLines.drawOnChartArea) {
-						ctx.moveTo(item.x1, item.y1);
-						ctx.lineTo(item.x2, item.y2);
-					}
-
+					ctx.beginPath();
+					ctx.moveTo(item.tx1, item.ty1);
+					ctx.lineTo(item.tx2, item.ty2);
 					ctx.stroke();
 					ctx.restore();
 				}
@@ -1522,45 +1605,14 @@ export default class Scale extends Element {
 
 		const ctx = me.ctx;
 		const items = me._labelItems || (me._labelItems = me._computeLabelItems(chartArea));
-		let i, j, ilen, jlen;
+		let i, ilen;
 
 		for (i = 0, ilen = items.length; i < ilen; ++i) {
 			const item = items[i];
 			const tickFont = item.font;
-			const useStroke = tickFont.lineWidth > 0 && tickFont.strokeStyle !== '';
-
-			// Make sure we draw text in the correct color and font
-			ctx.save();
-			ctx.translate(item.x, item.y);
-			ctx.rotate(item.rotation);
-			ctx.font = tickFont.string;
-			ctx.fillStyle = tickFont.color;
-			ctx.textAlign = item.textAlign;
-			ctx.textBaseline = item.textBaseline;
-
-			if (useStroke) {
-				ctx.strokeStyle = tickFont.strokeStyle;
-				ctx.lineWidth = tickFont.lineWidth;
-			}
-
 			const label = item.label;
 			let y = item.textOffset;
-			if (isArray(label)) {
-				for (j = 0, jlen = label.length; j < jlen; ++j) {
-					// We just make sure the multiline element is a string here..
-					if (useStroke) {
-						ctx.strokeText('' + label[j], 0, y);
-					}
-					ctx.fillText('' + label[j], 0, y);
-					y += tickFont.lineHeight;
-				}
-			} else {
-				if (useStroke) {
-					ctx.strokeText(label, 0, y);
-				}
-				ctx.fillText(label, 0, y);
-			}
-			ctx.restore();
+			renderText(ctx, label, 0, y, tickFont, item);
 		}
 	}
 
@@ -1626,15 +1678,13 @@ export default class Scale extends Element {
 			rotation = isLeft ? -HALF_PI : HALF_PI;
 		}
 
-		ctx.save();
-		ctx.translate(scaleLabelX, scaleLabelY);
-		ctx.rotate(rotation);
-		ctx.textAlign = textAlign;
-		ctx.textBaseline = 'middle';
-		ctx.fillStyle = scaleLabelFont.color;
-		ctx.font = scaleLabelFont.string;
-		ctx.fillText(scaleLabel.labelString, 0, 0);
-		ctx.restore();
+		renderText(ctx, scaleLabel.labelString, 0, 0, scaleLabelFont, {
+			color: scaleLabel.color,
+			rotation,
+			textAlign,
+			textBaseline: 'middle',
+			translation: [scaleLabelX, scaleLabelY],
+		});
 	}
 
 	draw(chartArea) {

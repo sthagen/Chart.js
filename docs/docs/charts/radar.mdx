@@ -31,8 +31,7 @@ export const ExampleChart = () => {
           pointBackgroundColor: 'rgb(255, 99, 132)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(255, 99, 132)',
-          fill: true
+          pointHoverBorderColor: 'rgb(255, 99, 132)'
         }, {
           label: 'My Second Dataset',
           data: [28, 48, 40, 19, 96, 27, 100],
@@ -42,8 +41,7 @@ export const ExampleChart = () => {
           pointBackgroundColor: 'rgb(54, 162, 235)',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgb(54, 162, 235)',
-          fill: true
+          pointHoverBorderColor: 'rgb(54, 162, 235)'
         }]
       },
       options: {
@@ -55,7 +53,8 @@ export const ExampleChart = () => {
         }
       }
     };
-    new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    const chart = new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    return () => chart.destroy();
   });
   return <div className="chartjs-wrapper"><canvas id="chartjs-0" className="chartjs"></canvas></div>;
 }
@@ -92,11 +91,11 @@ The radar chart allows a number of properties to be specified for each dataset. 
 | [`hoverBorderDashOffset`](#line-styling) | `number` | Yes | - | `undefined`
 | [`hoverBorderJoinStyle`](#line-styling) | `string` | Yes | - | `undefined`
 | [`hoverBorderWidth`](#line-styling) | `number` | Yes | - | `undefined`
-| [`clip`](#general) | <code>number&#124;object</code> | - | - | `undefined`
-| [`fill`](#line-styling) | <code>boolean&#124;string</code> | Yes | - | `true`
+| [`clip`](#general) | `number`\|`object` | - | - | `undefined`
+| [`fill`](#line-styling) | `boolean`\|`string` | Yes | - | `false`
 | [`label`](#general) | `string` | - | - | `''`
 | [`order`](#general) | `number` | - | - | `0`
-| [`lineTension`](#line-styling) | `number` | - | - | `0`
+| [`tension`](#line-styling) | `number` | - | - | `0`
 | [`pointBackgroundColor`](#point-styling) | `Color` | Yes | Yes | `'rgba(0, 0, 0, 0.1)'`
 | [`pointBorderColor`](#point-styling) | `Color` | Yes | Yes | `'rgba(0, 0, 0, 0.1)'`
 | [`pointBorderWidth`](#point-styling) | `number` | Yes | Yes | `1`
@@ -107,7 +106,7 @@ The radar chart allows a number of properties to be specified for each dataset. 
 | [`pointHoverRadius`](#interactions) | `number` | Yes | Yes | `4`
 | [`pointRadius`](#point-styling) | `number` | Yes | Yes | `3`
 | [`pointRotation`](#point-styling) | `number` | Yes | Yes | `0`
-| [`pointStyle`](#point-styling) | <code>string&#124;Image</code> | Yes | Yes | `'circle'`
+| [`pointStyle`](#point-styling) | `string`\|`Image` | Yes | Yes | `'circle'`
 | [`spanGaps`](#line-styling) | `boolean` | - | - | `undefined`
 
 ### General
@@ -148,7 +147,7 @@ The style of the line can be controlled with the following properties:
 | `borderJoinStyle` | Line joint style. See [MDN](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin).
 | `borderWidth` | The line width (in pixels).
 | `fill` | How to fill the area under the line. See [area charts](area.md).
-| `lineTension` | Bezier curve tension of the line. Set to 0 to draw straight lines.
+| `tension` | Bezier curve tension of the line. Set to 0 to draw straight lines.
 | `spanGaps` | If true, lines will be drawn between points with no or null data. If false, points with `NaN` data will create a break in the line.
 
 If the value is `undefined`, `spanGaps` fallback to the associated [chart configuration options](#configuration-options). The rest of the values fallback to the associated [`elements.line.*`](../configuration/elements.md#line-configuration) options.
@@ -191,7 +190,7 @@ options = {
 
 ## Default Options
 
-It is common to want to apply a configuration setting to all created radar charts. The global radar chart settings are stored in `Chart.defaults.radar`. Changing the global options only affects charts created after the change. Existing charts are not changed.
+It is common to want to apply a configuration setting to all created radar charts. The global radar chart settings are stored in `Chart.defaults.controllers.radar`. Changing the global options only affects charts created after the change. Existing charts are not changed.
 
 ## Data Structure
 

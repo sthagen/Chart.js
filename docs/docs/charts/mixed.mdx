@@ -14,7 +14,7 @@ var mixedChart = new Chart(ctx, {
             label: 'Bar Dataset',
             data: [10, 20, 30, 40]
         }, {
-            type: 'line'
+            type: 'line',
             label: 'Line Dataset',
             data: [50, 50, 50, 50],
         }],
@@ -60,7 +60,8 @@ export const ExampleChart = () => {
         }
       }
     };
-    new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    const chart = new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    return () => chart.destroy();
   });
   return <div className="chartjs-wrapper"><canvas id="chartjs-0" className="chartjs"></canvas></div>;
 }

@@ -39,8 +39,8 @@ var chartDifferentHoverMode = new Chart(ctx, {
 Options may be configured directly on the dataset. The dataset options can be changed at 3 different levels and are evaluated with the following priority:
 
 - per dataset: dataset.*
-- per chart: options[type].datasets.*
-- or globally: Chart.defaults[type].datasets.*
+- per chart: options.datasets[type].*
+- or globally: Chart.defaults.controllers[type].datasets.*
 
 where type corresponds to the dataset type.
 
@@ -50,7 +50,7 @@ The following example would set the `showLine` option to 'false' for all line da
 
 ```javascript
 // Do not show lines for all datasets by default
-Chart.defaults.datasets.line.showLine = false;
+Chart.defaults.controllers.line.showLine = false;
 
 // This chart would show a line only for the third dataset
 var chart = new Chart(ctx, {

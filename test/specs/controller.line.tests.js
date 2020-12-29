@@ -110,8 +110,10 @@ describe('Chart.controllers.line', function() {
 			},
 			options: {
 				showLine: true,
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				elements: {
 					point: {
 						backgroundColor: 'red',
@@ -167,8 +169,10 @@ describe('Chart.controllers.line', function() {
 				}]
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				hover: {
 					mode: 'nearest',
 					intersect: true
@@ -238,8 +242,10 @@ describe('Chart.controllers.line', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						display: false,
@@ -296,8 +302,10 @@ describe('Chart.controllers.line', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false,
+				},
 				scales: {
 					x: {
 						display: false,
@@ -379,8 +387,10 @@ describe('Chart.controllers.line', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						display: false,
@@ -433,8 +443,10 @@ describe('Chart.controllers.line', function() {
 				labels: ['label1', 'label2', 'label3', 'label4']
 			},
 			options: {
-				legend: false,
-				title: false,
+				plugins: {
+					legend: false,
+					title: false
+				},
 				scales: {
 					x: {
 						display: false,
@@ -499,20 +511,20 @@ describe('Chart.controllers.line', function() {
 
 	describe('dataset global defaults', function() {
 		beforeEach(function() {
-			this._defaults = Chart.helpers.clone(Chart.defaults.line.datasets);
+			this._defaults = Chart.helpers.clone(Chart.defaults.controllers.line.datasets);
 		});
 
 		afterEach(function() {
-			Chart.defaults.line.datasets = this._defaults;
+			Chart.defaults.controllers.line.datasets = this._defaults;
 			delete this._defaults;
 		});
 
 		it('should utilize the dataset global default options', function() {
-			Chart.defaults.line.datasets = Chart.defaults.line.datasets || {};
+			Chart.defaults.controllers.line.datasets = Chart.defaults.controllers.line.datasets || {};
 
-			Chart.helpers.merge(Chart.defaults.line.datasets, {
+			Chart.helpers.merge(Chart.defaults.controllers.line.datasets, {
 				spanGaps: true,
-				lineTension: 0.231,
+				tension: 0.231,
 				backgroundColor: '#add',
 				borderWidth: '#daa',
 				borderColor: '#dad',
@@ -551,11 +563,11 @@ describe('Chart.controllers.line', function() {
 		});
 
 		it('should be overriden by user-supplied values', function() {
-			Chart.defaults.line.datasets = Chart.defaults.line.datasets || {};
+			Chart.defaults.controllers.line.datasets = Chart.defaults.controllers.line.datasets || {};
 
-			Chart.helpers.merge(Chart.defaults.line.datasets, {
+			Chart.helpers.merge(Chart.defaults.controllers.line.datasets, {
 				spanGaps: true,
-				lineTension: 0.231
+				tension: 0.231
 			});
 
 			var chart = window.acquireChart({
@@ -570,9 +582,9 @@ describe('Chart.controllers.line', function() {
 					labels: ['label1', 'label2']
 				},
 				options: {
-					line: {
-						datasets: {
-							lineTension: 0.345,
+					datasets: {
+						line: {
+							tension: 0.345,
 							backgroundColor: '#add'
 						}
 					}
@@ -601,10 +613,10 @@ describe('Chart.controllers.line', function() {
 				labels: ['label1', 'label2']
 			},
 			options: {
-				line: {
-					datasets: {
+				datasets: {
+					line: {
 						spanGaps: true,
-						lineTension: 0.231,
+						tension: 0.231,
 						backgroundColor: '#add',
 						borderWidth: '#daa',
 						borderColor: '#dad',
@@ -642,7 +654,7 @@ describe('Chart.controllers.line', function() {
 					data: [0, 0],
 					label: 'dataset1',
 					spanGaps: true,
-					lineTension: 0.231,
+					tension: 0.231,
 					backgroundColor: '#add',
 					borderWidth: '#daa',
 					borderColor: '#dad',

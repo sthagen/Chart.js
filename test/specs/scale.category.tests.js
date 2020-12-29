@@ -90,6 +90,30 @@ describe('Category scale tests', function() {
 		expect(getLabels(scale)).toEqual(labels);
 	});
 
+	it('Should generate missing labels', function() {
+		var labels = ['a', 'b', 'c', 'd'];
+		var chart = window.acquireChart({
+			type: 'line',
+			data: {
+				datasets: [{
+					data: {a: 1, b: 3, c: -1, d: 10}
+				}]
+			},
+			options: {
+				scales: {
+					x: {
+						type: 'category',
+						labels: ['a']
+					}
+				}
+			}
+		});
+
+		var scale = chart.scales.x;
+		expect(getLabels(scale)).toEqual(labels);
+
+	});
+
 	it('should get the correct label for the index', function() {
 		var chart = window.acquireChart({
 			type: 'line',
@@ -450,5 +474,63 @@ describe('Category scale tests', function() {
 		expect(yScale.getPixelForValue(0)).toBeCloseToPixel(88);
 		expect(yScale.getPixelForValue(3)).toBeCloseToPixel(426);
 		expect(yScale.getPixelForValue(4)).toBeCloseToPixel(538);
+	});
+
+	it('Should be consistent on pixels and values with autoSkipped ticks', function() {
+		var labels = [];
+		for (let i = 0; i < 50; i++) {
+			labels.push('very long label ' + i);
+		}
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				labels,
+				datasets: [{
+					data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+				}]
+			}
+		});
+
+		var scale = chart.scales.x;
+		expect(scale.ticks.length).toBeLessThan(50);
+
+		let x = 0;
+		for (let i = 0; i < 50; i++) {
+			var x2 = scale.getPixelForValue(labels[i]);
+			var x3 = scale.getPixelForValue(i);
+			expect(x2).toEqual(x3);
+			expect(x2).toBeGreaterThan(x);
+			expect(scale.getValueForPixel(x2)).toBe(i);
+			x = x2;
+		}
+	});
+
+	it('Should bound to ticks/data', function() {
+		var chart = window.acquireChart({
+			type: 'line',
+			data: {
+				labels: ['a', 'b', 'c', 'd'],
+				datasets: [{
+					data: {b: 1, c: 99}
+				}]
+			},
+			options: {
+				scales: {
+					x: {
+						type: 'category',
+						bounds: 'data'
+					}
+				}
+			}
+		});
+
+		expect(chart.scales.x.min).toEqual(1);
+		expect(chart.scales.x.max).toEqual(2);
+
+		chart.options.scales.x.bounds = 'ticks';
+		chart.update();
+
+		expect(chart.scales.x.min).toEqual(0);
+		expect(chart.scales.x.max).toEqual(3);
 	});
 });

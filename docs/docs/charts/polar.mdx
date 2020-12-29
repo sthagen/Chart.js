@@ -33,7 +33,8 @@ export const ExampleChart = () => {
         }]
       }
     };
-    new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    const chart = new Chart(document.getElementById('chartjs-0').getContext('2d'), cfg);
+    return () => chart.destroy();
   });
   return <div className="chartjs-wrapper"><canvas id="chartjs-0" className="chartjs"></canvas></div>;
 }
@@ -60,7 +61,7 @@ The following options can be included in a polar area chart dataset to configure
 | [`borderAlign`](#border-alignment) | `string` | Yes | Yes | `'center'`
 | [`borderColor`](#styling) | [`Color`](../general/colors.md) | Yes | Yes | `'#fff'`
 | [`borderWidth`](#styling) | `number` | Yes | Yes | `2`
-| [`clip`](#general) | <code>number&#124;object</code> | - | - | `undefined`
+| [`clip`](#general) | `number`\|`object` | - | - | `undefined`
 | [`data`](#data-structure) | `number[]` | - | - | **required**
 | [`hoverBackgroundColor`](#interations) | [`Color`](../general/colors.md) | Yes | Yes | `undefined`
 | [`hoverBorderColor`](#interactions) | [`Color`](../general/colors.md) | Yes | Yes | `undefined`
@@ -115,16 +116,16 @@ These are the customisation options specific to Polar Area charts. These options
 | `animation.animateRotate` | `boolean` | `true` | If true, the chart will animate in with a rotation animation. This property is in the `options.animation` object.
 | `animation.animateScale` | `boolean` | `true` | If true, will animate scaling the chart from the center outwards.
 
-The polar area chart uses the [radialLinear](../axes/radial/linear.md) scale. Additional configuration is provided via the scale.
+The polar area chart uses the [radialLinear](../axes/radial/linear.mdx) scale. Additional configuration is provided via the scale.
 
 ## Default Options
 
-We can also change these default values for each PolarArea type that is created, this object is available at `Chart.defaults.polarArea`. Changing the global options only affects charts created after the change. Existing charts are not changed.
+We can also change these default values for each PolarArea type that is created, this object is available at `Chart.defaults.controllers.polarArea`. Changing the global options only affects charts created after the change. Existing charts are not changed.
 
 For example, to configure all new polar area charts with `animateScale = false` you would do:
 
 ```javascript
-Chart.defaults.polarArea.animation.animateScale = false;
+Chart.defaults.controllers.polarArea.animation.animateScale = false;
 ```
 
 ## Data Structure

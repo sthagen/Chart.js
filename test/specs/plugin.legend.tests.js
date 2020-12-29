@@ -17,12 +17,14 @@ describe('Legend block tests', function() {
 			onLeave: null,
 
 			labels: {
+				color: Chart.defaults.color,
 				boxWidth: 40,
 				padding: 10,
 				generateLabels: jasmine.any(Function)
 			},
 
 			title: {
+				color: Chart.defaults.color,
 				display: false,
 				position: 'center',
 				text: '',
@@ -196,8 +198,10 @@ describe('Legend block tests', function() {
 				labels: []
 			},
 			options: {
-				legend: {
-					reverse: true
+				plugins: {
+					legend: {
+						reverse: true
+					}
 				}
 			}
 		});
@@ -271,11 +275,13 @@ describe('Legend block tests', function() {
 				labels: []
 			},
 			options: {
-				legend: {
-					labels: {
-						filter: function(legendItem, data) {
-							var dataset = data.datasets[legendItem.datasetIndex];
-							return !dataset.legendHidden;
+				plugins: {
+					legend: {
+						labels: {
+							filter: function(legendItem, data) {
+								var dataset = data.datasets[legendItem.datasetIndex];
+								return !dataset.legendHidden;
+							}
 						}
 					}
 				}
@@ -338,10 +344,12 @@ describe('Legend block tests', function() {
 				labels: []
 			},
 			options: {
-				legend: {
-					labels: {
-						sort: function(a, b) {
-							return b.datasetIndex > a.datasetIndex ? 1 : -1;
+				plugins: {
+					legend: {
+						labels: {
+							sort: function(a, b) {
+								return b.datasetIndex > a.datasetIndex ? 1 : -1;
+							}
 						}
 					}
 				}
@@ -406,8 +414,10 @@ describe('Legend block tests', function() {
 					labels: []
 				},
 				options: {
-					legend: {
-						labels: false,
+					plugins: {
+						legend: {
+							labels: false,
+						}
 					}
 				}
 			});
@@ -429,8 +439,10 @@ describe('Legend block tests', function() {
 					labels: []
 				},
 				options: {
-					legend: {
-						position: 'right'
+					plugins: {
+						legend: {
+							position: 'right'
+						}
 					}
 				}
 			},
@@ -464,10 +476,12 @@ describe('Legend block tests', function() {
 					labels: []
 				},
 				options: {
-					legend: {
-						position: 'right',
-						labels: {
-							boxHeight: 40
+					plugins: {
+						legend: {
+							position: 'right',
+							labels: {
+								boxHeight: 40
+							}
 						}
 					}
 				}
@@ -585,9 +599,11 @@ describe('Legend block tests', function() {
 				labels: []
 			},
 			options: {
-				legend: {
-					labels: {
-						usePointStyle: true
+				plugins: {
+					legend: {
+						labels: {
+							usePointStyle: true
+						}
 					}
 				}
 			}
@@ -622,6 +638,104 @@ describe('Legend block tests', function() {
 		}]);
 	});
 
+	it('should draw correctly when usePointStyle is true and pointStyle override is set', function() {
+		var chart = window.acquireChart({
+			type: 'line',
+			data: {
+				datasets: [{
+					label: 'dataset1',
+					backgroundColor: '#f31',
+					borderCapStyle: 'butt',
+					borderDash: [2, 2],
+					borderDashOffset: 5.5,
+					borderWidth: 0,
+					borderColor: '#f31',
+					pointStyle: 'crossRot',
+					pointBackgroundColor: 'rgba(0,0,0,0.1)',
+					pointBorderWidth: 5,
+					pointBorderColor: 'green',
+					data: []
+				}, {
+					label: 'dataset2',
+					backgroundColor: '#f31',
+					borderJoinStyle: 'miter',
+					borderWidth: 2,
+					borderColor: '#f31',
+					pointStyle: 'crossRot',
+					pointRotation: 15,
+					data: []
+				}],
+				labels: []
+			},
+			options: {
+				plugins: {
+					legend: {
+						labels: {
+							usePointStyle: true,
+							pointStyle: 'star'
+						}
+					}
+				}
+			}
+		});
+
+		expect(chart.legend.legendItems).toEqual([{
+			text: 'dataset1',
+			fillStyle: 'rgba(0,0,0,0.1)',
+			hidden: false,
+			lineCap: undefined,
+			lineDash: undefined,
+			lineDashOffset: undefined,
+			lineJoin: undefined,
+			lineWidth: 5,
+			strokeStyle: 'green',
+			pointStyle: 'star',
+			rotation: undefined,
+			datasetIndex: 0
+		}, {
+			text: 'dataset2',
+			fillStyle: '#f31',
+			hidden: false,
+			lineCap: undefined,
+			lineDash: undefined,
+			lineDashOffset: undefined,
+			lineJoin: undefined,
+			lineWidth: 2,
+			strokeStyle: '#f31',
+			pointStyle: 'star',
+			rotation: 15,
+			datasetIndex: 1
+		}]);
+	});
+
+	it('should not crash when the legend defaults are false', function() {
+		const oldDefaults = Chart.defaults.plugins.legend;
+
+		Chart.defaults.set({
+			plugins: {
+				legend: false,
+			},
+		});
+
+		var chart = window.acquireChart({
+			type: 'doughnut',
+			data: {
+				datasets: [{
+					label: 'dataset1',
+					data: [1, 2, 3, 4]
+				}],
+				labels: ['', '', '', '']
+			},
+		});
+		expect(chart).toBeDefined();
+
+		Chart.defaults.set({
+			plugins: {
+				legend: oldDefaults,
+			},
+		});
+	});
+
 	describe('config update', function() {
 		it ('should update the options', function() {
 			var chart = acquireChart({
@@ -633,14 +747,16 @@ describe('Legend block tests', function() {
 					}]
 				},
 				options: {
-					legend: {
-						display: true
+					plugins: {
+						legend: {
+							display: true
+						}
 					}
 				}
 			});
 			expect(chart.legend.options.display).toBe(true);
 
-			chart.options.legend.display = false;
+			chart.options.plugins.legend.display = false;
 			chart.update();
 			expect(chart.legend.options.display).toBe(false);
 		});
@@ -650,10 +766,12 @@ describe('Legend block tests', function() {
 				type: 'line',
 				data: {},
 				options: {
-					legend: {
-						fullWidth: true,
-						position: 'top',
-						weight: 150
+					plugins: {
+						legend: {
+							fullWidth: true,
+							position: 'top',
+							weight: 150
+						}
 					}
 				}
 			});
@@ -662,9 +780,9 @@ describe('Legend block tests', function() {
 			expect(chart.legend.position).toBe('top');
 			expect(chart.legend.weight).toBe(150);
 
-			chart.options.legend.fullWidth = false;
-			chart.options.legend.position = 'left';
-			chart.options.legend.weight = 42;
+			chart.options.plugins.legend.fullWidth = false;
+			chart.options.plugins.legend.position = 'left';
+			chart.options.plugins.legend.weight = 42;
 			chart.update();
 
 			expect(chart.legend.fullWidth).toBe(false);
@@ -684,7 +802,7 @@ describe('Legend block tests', function() {
 			});
 			expect(chart.legend).not.toBe(undefined);
 
-			chart.options.legend = false;
+			chart.options.plugins.legend = false;
 			chart.update();
 			expect(chart.legend).toBe(undefined);
 		});
@@ -699,12 +817,14 @@ describe('Legend block tests', function() {
 					}]
 				},
 				options: {
-					legend: false
+					plugins: {
+						legend: false
+					}
 				}
 			});
 			expect(chart.legend).toBe(undefined);
 
-			chart.options.legend = {};
+			chart.options.plugins.legend = {};
 			chart.update();
 			expect(chart.legend).not.toBe(undefined);
 			expect(chart.legend.options).toEqual(jasmine.objectContaining(Chart.defaults.plugins.legend));
@@ -726,15 +846,17 @@ describe('Legend block tests', function() {
 					}]
 				},
 				options: {
-					legend: {
-						onClick: function(_, item) {
-							clickItem = item;
-						},
-						onHover: function(_, item) {
-							hoverItem = item;
-						},
-						onLeave: function(_, item) {
-							leaveItem = item;
+					plugins: {
+						legend: {
+							onClick: function(_, item) {
+								clickItem = item;
+							},
+							onHover: function(_, item) {
+								hoverItem = item;
+							},
+							onLeave: function(_, item) {
+								leaveItem = item;
+							}
 						}
 					}
 				}

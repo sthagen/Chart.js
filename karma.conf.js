@@ -1,11 +1,11 @@
 /* eslint-disable import/no-commonjs */
 
 const commonjs = require('@rollup/plugin-commonjs');
+const istanbul = require('rollup-plugin-istanbul');
 const json = require('@rollup/plugin-json');
 const resolve = require('@rollup/plugin-node-resolve').default;
 const builds = require('./rollup.config');
 const yargs = require('yargs');
-
 
 module.exports = function(karma) {
 	const args = yargs
@@ -21,6 +21,14 @@ module.exports = function(karma) {
 	// make sure that the minification process (terser) doesn't break anything.
 	const regex = karma.autoWatch ? /chart\.js$/ : /chart\.min\.js$/;
 	const build = builds.filter(v => v.output.file && v.output.file.match(regex))[0];
+
+	if (args.coverage) {
+		build.plugins = [
+			json(),
+			resolve(),
+			istanbul({exclude: ['node_modules/**/*.js', 'package.json']})
+		];
+	}
 
 	karma.set({
 		frameworks: ['jasmine'],
@@ -101,18 +109,13 @@ module.exports = function(karma) {
 		browserDisconnectTolerance: 3
 	});
 
-	// https://swizec.com/blog/how-to-run-javascript-tests-in-chrome-on-travis/swizec/6647
-	if (process.env.TRAVIS) {
-		karma.customLaunchers.chrome.flags.push('--no-sandbox');
-	}
-
 	if (args.coverage) {
 		karma.reporters.push('coverage');
 		karma.coverageReporter = {
 			dir: 'coverage/',
 			reporters: [
 				{type: 'html', subdir: 'html'},
-				{type: 'lcovonly', subdir: '.'}
+				{type: 'lcovonly', subdir: (browser) => browser.toLowerCase().split(/[ /-]/)[0]}
 			]
 		};
 	}
