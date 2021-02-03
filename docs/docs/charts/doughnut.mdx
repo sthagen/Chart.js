@@ -102,7 +102,7 @@ The doughnut/pie chart allows a number of properties to be specified for each da
 | [`borderAlign`](#border-alignment) | `string` | Yes | Yes | `'center'`
 | [`borderColor`](#styling) | [`Color`](../general/colors.md) | Yes | Yes | `'#fff'`
 | [`borderWidth`](#styling) | `number` | Yes | Yes | `2`
-| ['circumference`](#general) | `number` | - | - | `undefined`
+| [`circumference`](#general) | `number` | - | - | `undefined`
 | [`clip`](#general) | `number`\|`object` | - | - | `undefined`
 | [`data`](#data-structure) | `number[]` | - | - | **required**
 | [`hoverBackgroundColor`](#interations) | [`Color`](../general/colors.md) | Yes | Yes | `undefined`
@@ -164,8 +164,8 @@ These are the customisation options specific to Pie & Doughnut charts. These opt
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
 | `cutoutPercentage` | `number` | `50` - for doughnut, `0` - for pie | The percentage of the chart that is cut out of the middle.
-| `rotation` | `number` | `-0.5 * Math.PI` | Starting angle to draw arcs from.
-| `circumference` | `number` | `2 * Math.PI` | Sweep to allow arcs to cover.
+| `rotation` | `number` | 0 | Starting angle to draw arcs from.
+| `circumference` | `number` | 360 | Sweep to allow arcs to cover.
 | `animation.animateRotate` | `boolean` | `true` | If true, the chart will animate in with a rotation animation. This property is in the `options.animation` object.
 | `animation.animateScale` | `boolean` | `false` | If true, will animate scaling the chart from the center outwards.
 

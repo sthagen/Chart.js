@@ -28,14 +28,14 @@ export default class LineController extends DatasetController {
 		}
 
 		// Update Line
-		// In resize mode only point locations change, so no need to set the points or options.
-		if (mode !== 'resize') {
-			const properties = {
-				points,
-				options: me.resolveDatasetElementOptions()
-			};
+		line.points = points;
 
-			me.updateElement(line, undefined, properties, mode);
+		// In resize mode only point locations change, so no need to set the options.
+		if (mode !== 'resize') {
+			me.updateElement(line, undefined, {
+				animated: !animationsDisabled,
+				options: me.resolveDatasetElementOptions()
+			}, mode);
 		}
 
 		// Update Points

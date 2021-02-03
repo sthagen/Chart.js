@@ -9,7 +9,7 @@ describe('Title block tests', function() {
 			color: Chart.defaults.color,
 			display: false,
 			position: 'top',
-			fullWidth: true,
+			fullSize: true,
 			weight: 2000,
 			font: {
 				style: 'bold'
@@ -136,6 +136,9 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [0]
 		}, {
+			name: 'setFont',
+			args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"],
+		}, {
 			name: 'setFillStyle',
 			args: ['#666']
 		}, {
@@ -194,6 +197,9 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [-0.5 * Math.PI]
 		}, {
+			name: 'setFont',
+			args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"],
+		}, {
 			name: 'setFillStyle',
 			args: ['#666']
 		}, {
@@ -232,6 +238,9 @@ describe('Title block tests', function() {
 		}, {
 			name: 'rotate',
 			args: [0.5 * Math.PI]
+		}, {
+			name: 'setFont',
+			args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"],
 		}, {
 			name: 'setFillStyle',
 			args: ['#666']
@@ -282,7 +291,7 @@ describe('Title block tests', function() {
 				options: {
 					plugins: {
 						title: {
-							fullWidth: true,
+							fullSize: true,
 							position: 'top',
 							weight: 150
 						}
@@ -290,16 +299,16 @@ describe('Title block tests', function() {
 				}
 			});
 
-			expect(chart.titleBlock.fullWidth).toBe(true);
+			expect(chart.titleBlock.fullSize).toBe(true);
 			expect(chart.titleBlock.position).toBe('top');
 			expect(chart.titleBlock.weight).toBe(150);
 
-			chart.options.plugins.title.fullWidth = false;
+			chart.options.plugins.title.fullSize = false;
 			chart.options.plugins.title.position = 'left';
 			chart.options.plugins.title.weight = 42;
 			chart.update();
 
-			expect(chart.titleBlock.fullWidth).toBe(false);
+			expect(chart.titleBlock.fullSize).toBe(false);
 			expect(chart.titleBlock.position).toBe('left');
 			expect(chart.titleBlock.weight).toBe(42);
 		});

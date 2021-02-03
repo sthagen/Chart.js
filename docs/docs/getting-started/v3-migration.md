@@ -53,7 +53,7 @@ const chart = new Chart(ctx, {
 
 ### Chart types
 
-* `horizontalBar` chart type was removed. Horizontal bar charts can be configured using the new [`indexAxis`](./charts/bar.mdx#general) option
+* `horizontalBar` chart type was removed. Horizontal bar charts can be configured using the new [`indexAxis`](./charts/bar.mdx#horizontal-bar-chart) option
 
 ### Options
 
@@ -72,7 +72,7 @@ A number of changes were made to the configuration options passed to the `Chart`
 * Polar area `elements.arc.angle` is now configured in degrees instead of radians.
 * Polar area `startAngle` option is now consistent with `Radar`, 0 is at top and value is in degrees. Default is changed from `-½π` to  `0`.
 * Doughnut `rotation` option is now in degrees and 0 is at top. Default is changed from `-½π` to  `0`.
-* Doughnut `circumference` option is now in degrees. Default is changed from `2π` to `0`.
+* Doughnut `circumference` option is now in degrees. Default is changed from `2π` to `360`.
 * `scales.[x/y]Axes` arrays were removed. Scales are now configured directly to `options.scales` object with the object key being the scale Id.
 * `scales.[x/y]Axes.barPercentage` was moved to dataset option `barPercentage`
 * `scales.[x/y]Axes.barThickness` was moved to dataset option `barThickness`
@@ -402,6 +402,7 @@ The following properties were renamed during v3 development:
 * `helpers.callCallback` was renamed to `helpers.callback`
 * `helpers.drawRoundedRectangle` was renamed to `helpers.roundedRect`
 * `helpers.getValueOrDefault` was renamed to `helpers.valueOrDefault`
+* `LayoutItem.fullWidth` was renamed to `LayoutItem.fullSize`
 * `Scale.calculateTickRotation` was renamed to `Scale.calculateLabelRotation`
 * `Tooltip.options.legendColorBackgroupd` was renamed to `Tooltip.options.multiKeyBackground`
 
@@ -434,6 +435,7 @@ The private APIs listed below were renamed:
 * `DatasetController.onDataUnshift` was renamed to `DatasetController._onDataUnshift`
 * `DatasetController.removeElements` was renamed to `DatasetController._removeElements`
 * `DatasetController.resyncElements` was renamed to `DatasetController._resyncElements`
+* `LayoutItem.isFullWidth` was renamed to `LayoutItem.isFullSize`
 * `RadialLinearScale.setReductions` was renamed to `RadialLinearScale._setReductions`
 * `Scale.handleMargins` was renamed to `Scale._handleMargins`
 
@@ -504,3 +506,4 @@ All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.cli
 * `afterEvent` and `beforeEvent` now receive a wrapped `event` as the `event` property of the second argument. The native event is available via `args.event.native`.
 * Initial `resize` is no longer silent. Meaning that `resize` event can fire between `beforeInit` and `afterInit`
 * New hooks: `install`, `start`, `stop`, and `uninstall`
+* `afterEvent` should notify about changes that need a render by setting `args.changed` to true. Because the `args` are shared with all plugins, it should only be set to true and not false.
