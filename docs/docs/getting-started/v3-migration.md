@@ -63,6 +63,10 @@ A number of changes were made to the configuration options passed to the `Chart`
 
 * Indexable options are now looping. `backgroundColor: ['red', 'green']` will result in alternating `'red'` / `'green'` if there are more than 2 data points.
 * The input properties of object data can now be freely specified, see [data structures](../general/data-structures.md) for details.
+* Most options are resolved utilizing proxies, instead merging with defaults. In addition to easily enabling different resolution routes for different contexts, it allows using other resolved options in scriptable options.
+  * Options are by default scriptable and indexable, unless disabled for some reason.
+  * Scriptable options receive a option reolver as second parameter for accessing other options in same context.
+  * Resolution falls to upper scopes, if no match is found earlier. See [options](./general/options.md) for details.
 
 #### Specific changes
 
@@ -73,6 +77,7 @@ A number of changes were made to the configuration options passed to the `Chart`
 * Polar area `startAngle` option is now consistent with `Radar`, 0 is at top and value is in degrees. Default is changed from `-½π` to  `0`.
 * Doughnut `rotation` option is now in degrees and 0 is at top. Default is changed from `-½π` to  `0`.
 * Doughnut `circumference` option is now in degrees. Default is changed from `2π` to `360`.
+* `scale` option was removed in favor of `options.scales.r` (or any other scale id, with `axis: 'r'`)
 * `scales.[x/y]Axes` arrays were removed. Scales are now configured directly to `options.scales` object with the object key being the scale Id.
 * `scales.[x/y]Axes.barPercentage` was moved to dataset option `barPercentage`
 * `scales.[x/y]Axes.barThickness` was moved to dataset option `barThickness`
@@ -255,7 +260,7 @@ A few changes were made to controllers that are more straight-forward, but will 
 
 The following properties and methods were removed:
 
-#### Chart
+#### Removed from Chart
 
 * `Chart.animationService`
 * `Chart.active`
@@ -289,14 +294,14 @@ The following properties and methods were removed:
 * `Chart.Tooltip` is now provided by the tooltip plugin. The positioners can be accessed from `tooltipPlugin.positioners`
 * `ILayoutItem.minSize`
 
-#### Dataset Controllers
+#### Removed from Dataset Controllers
 
 * `BarController.getDatasetMeta().bar`
 * `DatasetController.addElementAndReset`
 * `DatasetController.createMetaData`
 * `DatasetController.createMetaDataset`
 
-#### Elements
+#### Removed from Elements
 
 * `Element.getArea`
 * `Element.height`
@@ -305,7 +310,7 @@ The following properties and methods were removed:
 * `Element.inLabelRange`
 * `Line.calculatePointY`
 
-#### Helpers
+#### Removed from Helpers
 
 * `helpers.addEvent`
 * `helpers.aliasPixel`
@@ -331,11 +336,11 @@ The following properties and methods were removed:
 * `helpers.scaleMerge`
 * `helpers.where`
 
-#### Layout
+#### Removed from Layout
 
 * `Layout.defaults`
 
-#### Scales
+#### Removed from Scales
 
 * `LinearScaleBase.handleDirectionalChanges`
 * `LogarithmicScale.minNotZero`
@@ -349,7 +354,7 @@ The following properties and methods were removed:
 * `TimeScale.getLabelCapacity` is now private
 * `TimeScale.tickFormatFunction` is now private
 
-#### Plugins (Legend, Title, and Tooltip)
+#### Removed from Plugins (Legend, Title, and Tooltip)
 
 * `IPlugin.afterScaleUpdate`. Use `afterLayout` instead
 * `Legend.margins` is now private
@@ -443,12 +448,12 @@ The private APIs listed below were renamed:
 
 The APIs listed in this section have changed in signature or behaviour from version 2.
 
-#### Scales
+#### Changed in Scales
 
 * `Scale.getLabelForIndex` was replaced by `scale.getLabelForValue`
 * `Scale.getPixelForValue` now has only one parameter. For the `TimeScale` that parameter must be millis since the epoch
 
-##### Ticks
+##### Changed in Ticks
 
 * `Scale.afterBuildTicks` now has no parameters like the other callbacks
 * `Scale.buildTicks` is now expected to return tick objects
@@ -457,11 +462,11 @@ The APIs listed in this section have changed in signature or behaviour from vers
 * When the `autoSkip` option is enabled, `Scale.ticks` now contains only the non-skipped ticks instead of all ticks.
 * Ticks are now always generated in monotonically increasing order
 
-##### Time Scale
+##### Changed in Time Scale
 
 * `getValueForPixel` now returns milliseconds since the epoch
 
-#### Controllers
+#### Changed in Controllers
 
 ##### Core Controller
 
@@ -473,15 +478,15 @@ The APIs listed in this section have changed in signature or behaviour from vers
 * `updateElement` was replaced with `updateElements` now taking the elements to update, the `start` index, `count`, and `mode`
 * `setHoverStyle` and `removeHoverStyle` now additionally take the `datasetIndex` and `index`
 
-#### Interactions
+#### Changed in Interactions
 
 * Interaction mode methods now return an array of objects containing the `element`, `datasetIndex`, and `index`
 
-#### Layout
+#### Changed in Layout
 
 * `ILayoutItem.update` no longer has a return value
 
-#### Helpers
+#### Changed in Helpers
 
 All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.clipArea` -> `Chart.helpers.clipArea`
 
@@ -491,15 +496,16 @@ All helpers are now exposed in a flat hierarchy, e.g., `Chart.helpers.canvas.cli
 * `helpers.getMaximumHeight` was replaced by `helpers.dom.getMaximumSize`
 * `helpers.getMaximumWidth` was replaced by `helpers.dom.getMaximumSize`
 * `helpers.clear` was renamed to `helpers.clearCanvas` and now takes `canvas` and optionally `ctx` as parameter(s).
+* `helpers.retinaScale` accepts optional third parameter `forceStyle`, which forces overriding current canvas style. `forceRatio` no longer falls back to `window.devicePixelRatio`, instead it defaults to `1`.
 
-#### Platform
+#### Changed in Platform
 
 * `Chart.platform` is no longer the platform object used by charts. Every chart instance now has a separate platform instance.
 * `Chart.platforms` is an object that contains two usable platform classes, `BasicPlatform` and `DomPlatform`. It also contains `BasePlatform`, a class that all platforms must extend from.
 * If the canvas passed in is an instance of `OffscreenCanvas`, the `BasicPlatform` is automatically used.
 * `isAttached` method was added to platform.
 
-#### IPlugin interface
+#### Changed in IPlugin interface
 
 * All plugin hooks have unified signature with 3 arguments: `chart`, `args` and `options`. This means change in signature for these hooks: `beforeInit`, `afterInit`, `reset`, `beforeLayout`, `afterLayout`, `beforeRender`, `afterRender`, `beforeDraw`, `afterDraw`, `beforeDatasetsDraw`, `afterDatasetsDraw`, `beforeEvent`, `afterEvent`, `resize`, `destroy`.
 * `afterDatasetsUpdate`, `afterUpdate`, `beforeDatasetsUpdate`, and `beforeUpdate` now receive `args` object as second argument. `options` argument is always the last and thus was moved from 2nd to 3rd place.

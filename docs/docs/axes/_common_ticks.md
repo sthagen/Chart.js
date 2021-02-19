@@ -1,4 +1,6 @@
-### Common to all axes
+### Common tick options to all axes
+
+Namespace: `options.scales[scaleId].ticks`
 
 | Name | Type | Scriptable | Default | Description
 | ---- | ---- | :-------------------------------: | ------- | -----------

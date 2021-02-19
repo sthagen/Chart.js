@@ -1,4 +1,6 @@
-### Common options to all cartesian axes
+### Common tick options to all cartesian axes
+
+Namespace: `options.scales[scaleId].ticks`
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------

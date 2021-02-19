@@ -1,4 +1,6 @@
-### Common to all axes
+### Common options to all axes
+
+Namespace: `options.scales[scaleId]`
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
