@@ -179,7 +179,7 @@ function fastPathSegment(ctx, line, segment, params) {
 function _getSegmentMethod(line) {
   const opts = line.options;
   const borderDash = opts.borderDash && opts.borderDash.length;
-  const useFastPath = !line._loop && !opts.tension && !opts.stepped && !borderDash;
+  const useFastPath = !line._decimated && !line._loop && !opts.tension && !opts.stepped && !borderDash;
   return useFastPath ? fastPathSegment : pathSegment;
 }
 
@@ -198,6 +198,27 @@ function _getInterpolationMethod(options) {
   return _pointInLine;
 }
 
+function strokePathWithCache(ctx, line, start, count) {
+  let path = line._path;
+  if (!path) {
+    path = line._path = new Path2D();
+    if (line.path(path, start, count)) {
+      path.closePath();
+    }
+  }
+  ctx.stroke(path);
+}
+function strokePathDirect(ctx, line, start, count) {
+  ctx.beginPath();
+  if (line.path(ctx, start, count)) {
+    ctx.closePath();
+  }
+  ctx.stroke();
+}
+
+const usePath2D = typeof Path2D === 'function';
+const strokePath = usePath2D ? strokePathWithCache : strokePathDirect;
+
 export default class LineElement extends Element {
 
   constructor(cfg) {
@@ -210,6 +231,7 @@ export default class LineElement extends Element {
     this._path = undefined;
     this._points = undefined;
     this._segments = undefined;
+    this._decimated = false;
     this._pointsUpdated = false;
 
     if (cfg) {
@@ -363,15 +385,7 @@ export default class LineElement extends Element {
 
     setStyle(ctx, options);
 
-    let path = me._path;
-    if (!path) {
-      path = me._path = new Path2D();
-      if (me.path(path, start, count)) {
-        path.closePath();
-      }
-    }
-
-    ctx.stroke(path);
+    strokePath(ctx, me, start, count);
 
     ctx.restore();
 
