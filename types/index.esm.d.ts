@@ -285,16 +285,17 @@ export interface DoughnutControllerChartOptions {
 	circumference: number;
 
   /**
-	 * The percentage of the chart that is cut out of the middle. (50 - for doughnut, 0 - for pie)
+	 * The portion of the chart that is cut out of the middle. ('50%' - for doughnut, 0 - for pie)
+   * String ending with '%' means percentage, number means pixels.
 	 * @default 50
 	 */
-  cutoutPercentage: number;
+  cutout: Scriptable<number | string, ScriptableContext<number>>;
 
   /**
    * The outer radius of the chart. String ending with '%' means percentage of maximum radius, number means pixels.
    * @default '100%'
    */
-  outerRadius: Scriptable<number | string, ScriptableContext<number>>;
+  radius: Scriptable<number | string, ScriptableContext<number>>;
 
 	/**
 	 * Starting angle to draw arcs from.
@@ -313,7 +314,6 @@ export interface DoughnutController extends DatasetController {
 	readonly offsetX: number;
 	readonly offsetY: number;
 
-	getRingIndex(datasetIndex: number): number;
 	calculateTotal(): number;
 	calculateCircumference(value: number): number;
 }
