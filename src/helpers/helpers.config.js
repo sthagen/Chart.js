@@ -86,7 +86,7 @@ export function _createResolver(scopes, prefixes = [''], rootScopes = scopes, fa
  * @param {object} proxy - The Proxy returned by `_createResolver`
  * @param {object} context - Context object for scriptable/indexable options
  * @param {object} [subProxy] - The proxy provided for scriptable options
- * @param {{scriptable: boolean, indexable: boolean}} [descriptorDefaults] - Defaults for descriptors
+ * @param {{scriptable: boolean, indexable: boolean, allKeys?: boolean}} [descriptorDefaults] - Defaults for descriptors
  * @private
  */
 export function _attachContext(proxy, context, subProxy, descriptorDefaults) {
@@ -123,7 +123,9 @@ export function _attachContext(proxy, context, subProxy, descriptorDefaults) {
      * Also used by Object.hasOwnProperty.
      */
     getOwnPropertyDescriptor(target, prop) {
-      return Reflect.getOwnPropertyDescriptor(proxy, prop);
+      return target._descriptors.allKeys
+        ? Reflect.has(proxy, prop) ? {enumerable: true, configurable: true} : undefined
+        : Reflect.getOwnPropertyDescriptor(proxy, prop);
     },
 
     /**
@@ -162,8 +164,9 @@ export function _attachContext(proxy, context, subProxy, descriptorDefaults) {
  * @private
  */
 export function _descriptors(proxy, defaults = {scriptable: true, indexable: true}) {
-  const {_scriptable = defaults.scriptable, _indexable = defaults.indexable} = proxy;
+  const {_scriptable = defaults.scriptable, _indexable = defaults.indexable, _allKeys = defaults.allKeys} = proxy;
   return {
+    allKeys: _allKeys,
     scriptable: _scriptable,
     indexable: _indexable,
     isScriptable: isFunction(_scriptable) ? _scriptable : () => _scriptable,
@@ -172,7 +175,7 @@ export function _descriptors(proxy, defaults = {scriptable: true, indexable: tru
 }
 
 const readKey = (prefix, name) => prefix ? prefix + _capitalize(name) : name;
-const needsSubResolver = (prop, value) => isObject(value);
+const needsSubResolver = (prop, value) => isObject(value) && prop !== 'adapters';
 
 function _cached(target, prop, resolve) {
   let value = target[prop]; // cached value
@@ -245,22 +248,23 @@ function resolveFallback(fallback, prop, value) {
   return isFunction(fallback) ? fallback(prop, value) : fallback;
 }
 
-const getScope = (key, parent) => key === true ? parent : resolveObjectKey(parent, key);
+const getScope = (key, parent) => key === true ? parent
+  : typeof key === 'string' ? resolveObjectKey(parent, key) : undefined;
 
 function addScopes(set, parentScopes, key, parentFallback) {
   for (const parent of parentScopes) {
     const scope = getScope(key, parent);
     if (scope) {
       set.add(scope);
-      const fallback = scope._fallback;
+      const fallback = resolveFallback(scope._fallback, key, scope);
       if (defined(fallback) && fallback !== key && fallback !== parentFallback) {
         // When we reach the descriptor that defines a new _fallback, return that.
         // The fallback will resume to that new scope.
         return fallback;
       }
-    } else if (scope === false && key !== 'fill') {
-      // Fallback to `false` results to `false`, expect for `fill`.
-      // The special case (fill) should be handled through descriptors.
+    } else if (scope === false && defined(parentFallback) && key !== parentFallback) {
+      // Fallback to `false` results to `false`, when falling back to different key.
+      // For example `interaction` from `hover` or `plugins.tooltip` and `animation` from `animations`
       return null;
     }
   }
@@ -272,23 +276,25 @@ function createSubResolver(parentScopes, resolver, prop, value) {
   const fallback = resolveFallback(resolver._fallback, prop, value);
   const allScopes = [...parentScopes, ...rootScopes];
   const set = new Set([value]);
-  let key = prop;
-  while (key !== false) {
-    key = addScopes(set, allScopes, key, fallback);
-    if (key === null) {
-      return false;
-    }
+  let key = addScopesFromKey(set, allScopes, prop, fallback || prop);
+  if (key === null) {
+    return false;
   }
   if (defined(fallback) && fallback !== prop) {
-    const fallbackScopes = allScopes;
-    key = fallback;
-    while (key !== false) {
-      key = addScopes(set, fallbackScopes, key, fallback);
+    key = addScopesFromKey(set, allScopes, fallback, key);
+    if (key === null) {
+      return false;
     }
   }
   return _createResolver([...set], [''], rootScopes, fallback);
 }
 
+function addScopesFromKey(set, allScopes, key, fallback) {
+  while (key) {
+    key = addScopes(set, allScopes, key, fallback);
+  }
+  return key;
+}
 
 function _resolveWithPrefixes(prop, prefixes, scopes, proxy) {
   let value;

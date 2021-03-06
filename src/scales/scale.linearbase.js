@@ -1,29 +1,7 @@
 import {isNullOrUndef} from '../helpers/helpers.core';
-import {almostEquals, almostWhole, log10, _decimalPlaces, _setMinAndMaxByKey, sign} from '../helpers/helpers.math';
+import {almostEquals, almostWhole, niceNum, _decimalPlaces, _setMinAndMaxByKey, sign} from '../helpers/helpers.math';
 import Scale from '../core/core.scale';
 import {formatNumber} from '../core/core.intl';
-
-/**
- * Implementation of the nice number algorithm used in determining where axis labels will go
- * @return {number}
- */
-function niceNum(range) {
-  const exponent = Math.floor(log10(range));
-  const fraction = range / Math.pow(10, exponent);
-  let niceFraction;
-
-  if (fraction <= 1.0) {
-    niceFraction = 1;
-  } else if (fraction <= 2) {
-    niceFraction = 2;
-  } else if (fraction <= 5) {
-    niceFraction = 5;
-  } else {
-    niceFraction = 10;
-  }
-
-  return niceFraction * Math.pow(10, exponent);
-}
 
 /**
  * Generate a set of linear ticks
@@ -42,12 +20,14 @@ function generateTicks(generationOptions, dataRange) {
   const unit = stepSize || 1;
   const maxNumSpaces = generationOptions.maxTicks - 1;
   const {min: rmin, max: rmax} = dataRange;
+  const minDefined = !isNullOrUndef(min);
+  const maxDefined = !isNullOrUndef(max);
   let spacing = niceNum((rmax - rmin) / maxNumSpaces / unit) * unit;
   let factor, niceMin, niceMax, numSpaces;
 
   // Beyond MIN_SPACING floating point numbers being to lose precision
   // such that we can't do the math necessary to generate ticks
-  if (spacing < MIN_SPACING && isNullOrUndef(min) && isNullOrUndef(max)) {
+  if (spacing < MIN_SPACING && !minDefined && !maxDefined) {
     return [{value: rmin}, {value: rmax}];
   }
 
@@ -70,7 +50,7 @@ function generateTicks(generationOptions, dataRange) {
   niceMax = Math.ceil(rmax / spacing) * spacing;
 
   // If min, max and stepSize is set and they make an evenly spaced scale use it.
-  if (stepSize && !isNullOrUndef(min) && !isNullOrUndef(max)) {
+  if (stepSize && minDefined && maxDefined) {
     // If very close to our whole number, use it.
     if (almostWhole((max - min) / stepSize, spacing / 1000)) {
       niceMin = min;
@@ -88,11 +68,34 @@ function generateTicks(generationOptions, dataRange) {
 
   niceMin = Math.round(niceMin * factor) / factor;
   niceMax = Math.round(niceMax * factor) / factor;
-  ticks.push({value: isNullOrUndef(min) ? niceMin : min});
-  for (let j = 1; j < numSpaces; ++j) {
+
+  let j = 0;
+  if (minDefined) {
+    ticks.push({value: min});
+    // If the niceMin is smaller than min, skip it
+    if (niceMin < min) {
+      j++;
+    }
+    // If the next nice tick is close to min, skip that too
+    if (almostWhole(Math.round((niceMin + j * spacing) * factor) / factor / min, spacing / 1000)) {
+      j++;
+    }
+  }
+
+  for (; j < numSpaces; ++j) {
     ticks.push({value: Math.round((niceMin + j * spacing) * factor) / factor});
   }
-  ticks.push({value: isNullOrUndef(max) ? niceMax : max});
+
+  if (maxDefined) {
+    // If the previous tick is close to max, replace it with max, else add max
+    if (almostWhole(ticks[ticks.length - 1].value / max, spacing / 1000)) {
+      ticks[ticks.length - 1].value = max;
+    } else {
+      ticks.push({value: max});
+    }
+  } else {
+    ticks.push({value: niceMax});
+  }
 
   return ticks;
 }

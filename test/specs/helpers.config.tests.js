@@ -128,6 +128,37 @@ describe('Chart.helpers.config', function() {
         });
       });
 
+      it('should support _fallback as function', function() {
+        const descriptors = {
+          _fallback: (prop, value) => prop === 'hover' && value.shouldFall && 'interaction',
+        };
+        const defaults = {
+          interaction: {
+            mode: 'test',
+            priority: 'fall'
+          },
+          hover: {
+            priority: 'main'
+          }
+        };
+        const options = {
+          interaction: {
+            a: 1
+          },
+          hover: {
+            shouldFall: true,
+            b: 2
+          }
+        };
+        const resolver = _createResolver([options, defaults, descriptors]);
+        expect(resolver.hover).toEqualOptions({
+          mode: 'test',
+          priority: 'main',
+          a: 1,
+          b: 2
+        });
+      });
+
       it('should not fallback by default', function() {
         const defaults = {
           hover: {
@@ -654,6 +685,28 @@ describe('Chart.helpers.config', function() {
 
       delete opts.test;
       expect('test' in opts).toBeFalse();
+    });
+
+    it('should not create proxy for adapters', function() {
+      const defaults = {
+        scales: {
+          time: {
+            adapters: {
+              date: {
+                locale: {
+                  method: (arg) => arg === undefined ? 'ok' : 'fail'
+                }
+              }
+            }
+          }
+        }
+      };
+
+      const resolver = _createResolver([{}, defaults]);
+      const opts = _attachContext(resolver, {index: 1});
+      const fn = opts.scales.time.adapters.date.locale.method;
+      expect(typeof fn).toBe('function');
+      expect(fn()).toEqual('ok');
     });
 
     describe('_indexable and _scriptable', function() {

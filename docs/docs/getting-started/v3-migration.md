@@ -85,6 +85,8 @@ A number of changes were made to the configuration options passed to the `Chart`
 * `scales.[x/y]Axes.categoryPercentage` was moved to dataset option `categoryPercentage`
 * `scales.[x/y]Axes.maxBarThickness` was moved to dataset option `maxBarThickness`
 * `scales.[x/y]Axes.minBarLength` was moved to dataset option `minBarLength`
+* `scales.[x/y]Axes.scaleLabel` was renamed to `scales[id].title`
+* `scales.[x/y]Axes.scaleLabel.labelString` was renamed to `scales[id].title.text`
 * `scales.[x/y]Axes.ticks.beginAtZero` was renamed to `scales[id].beginAtZero`
 * `scales.[x/y]Axes.ticks.max` was renamed to `scales[id].max`
 * `scales.[x/y]Axes.ticks.min` was renamed to `scales[id].min`
@@ -109,7 +111,7 @@ A number of changes were made to the configuration options passed to the `Chart`
 #### Defaults
 
 * `global` namespace was removed from `defaults`. So `Chart.defaults.global` is now `Chart.defaults`
-* Dataset controller defaults were relocate to `controllers`. For example `Chart.defaults.line` is now `Chart.defaults.controllers.line`
+* Dataset controller defaults were relocate to `overrides`. For example `Chart.defaults.line` is now `Chart.overrides.line`
 * `default` prefix was removed from defaults. For example `Chart.defaults.global.defaultColor` is now `Chart.defaults.color`
 * `defaultColor` was split to `color`, `borderColor` and `backgroundColor`
 * `defaultFontColor` was renamed to `color`
@@ -134,9 +136,9 @@ options: {
       id: 'x',
       type: 'time',
       display: true,
-      scaleLabel: {
+      title: {
         display: true,
-        labelString: 'Date'
+        text: 'Date'
       },
       ticks: {
         major: {
@@ -155,9 +157,9 @@ options: {
     yAxes: [{
       id: 'y',
       display: true,
-      scaleLabel: {
+      title: {
         display: true,
-        labelString: 'value'
+        text: 'value'
       }
     }]
   }
@@ -172,9 +174,9 @@ options: {
     x: {
       type: 'time',
       display: true,
-      scaleLabel: {
+      title: {
         display: true,
-        labelString: 'Date'
+        text: 'Date'
       },
       ticks: {
         major: {
@@ -192,9 +194,9 @@ options: {
     },
     y: {
       display: true,
-      scaleLabel: {
+      title: {
         display: true,
-        labelString: 'value'
+        text: 'value'
       }
     }
   }
