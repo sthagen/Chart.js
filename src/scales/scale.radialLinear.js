@@ -4,13 +4,14 @@ import {HALF_PI, isNumber, TAU, toDegrees, toRadians, _normalizeAngle} from '../
 import LinearScaleBase from './scale.linearbase';
 import Ticks from '../core/core.ticks';
 import {valueOrDefault, isArray, isFinite, callback as callCallback, isNullOrUndef} from '../helpers/helpers.core';
-import {toFont} from '../helpers/helpers.options';
+import {toFont, toPadding} from '../helpers/helpers.options';
 
 function getTickBackdropHeight(opts) {
   const tickOpts = opts.ticks;
 
   if (tickOpts.display && opts.display) {
-    return valueOrDefault(tickOpts.font && tickOpts.font.size, defaults.font.size) + tickOpts.backdropPaddingY * 2;
+    const padding = toPadding(tickOpts.backdropPadding);
+    return valueOrDefault(tickOpts.font && tickOpts.font.size, defaults.font.size) + padding.height;
   }
   return 0;
 }
@@ -90,16 +91,18 @@ function fitWithPointLabels(scale) {
   const furthestAngles = {};
   let i, textSize, pointPosition;
 
-  scale._pointLabelSizes = [];
+  const labelSizes = [];
+  const padding = [];
 
-  const valueCount = scale.chart.data.labels.length;
+  const valueCount = scale.getLabels().length;
   for (i = 0; i < valueCount; i++) {
-    pointPosition = scale.getPointPosition(i, scale.drawingArea + 5);
     const opts = scale.options.pointLabels.setContext(scale.getContext(i));
+    padding[i] = opts.padding;
+    pointPosition = scale.getPointPosition(i, scale.drawingArea + padding[i]);
     const plFont = toFont(opts.font);
     scale.ctx.font = plFont.string;
-    textSize = measureLabelSize(scale.ctx, plFont.lineHeight, scale.pointLabels[i]);
-    scale._pointLabelSizes[i] = textSize;
+    textSize = measureLabelSize(scale.ctx, plFont.lineHeight, scale._pointLabels[i]);
+    labelSizes[i] = textSize;
 
     // Add quarter circle to make degree 0 mean top of circle
     const angleRadians = scale.getIndexAngle(i);
@@ -129,6 +132,51 @@ function fitWithPointLabels(scale) {
   }
 
   scale._setReductions(scale.drawingArea, furthestLimits, furthestAngles);
+
+  scale._pointLabelItems = [];
+
+  // Now that text size is determined, compute the full positions
+  const opts = scale.options;
+  const tickBackdropHeight = getTickBackdropHeight(opts);
+  const outerDistance = scale.getDistanceFromCenterForValue(opts.ticks.reverse ? scale.min : scale.max);
+
+  for (i = 0; i < valueCount; i++) {
+    // Extra pixels out for some label spacing
+    const extra = (i === 0 ? tickBackdropHeight / 2 : 0);
+    const pointLabelPosition = scale.getPointPosition(i, outerDistance + extra + padding[i]);
+
+    const angle = toDegrees(scale.getIndexAngle(i));
+    const size = labelSizes[i];
+    adjustPointPositionForLabelHeight(angle, size, pointLabelPosition);
+
+    const textAlign = getTextAlignForAngle(angle);
+    let left;
+
+    if (textAlign === 'left') {
+      left = pointLabelPosition.x;
+    } else if (textAlign === 'center') {
+      left = pointLabelPosition.x - (size.w / 2);
+    } else {
+      left = pointLabelPosition.x - size.w;
+    }
+
+    const right = left + size.w;
+
+    scale._pointLabelItems[i] = {
+      // Text position
+      x: pointLabelPosition.x,
+      y: pointLabelPosition.y,
+
+      // Text rendering data
+      textAlign,
+
+      // Bounding box
+      left,
+      top: pointLabelPosition.y,
+      right,
+      bottom: pointLabelPosition.y + size.h,
+    };
+  }
 }
 
 function getTextAlignForAngle(angle) {
@@ -149,74 +197,71 @@ function adjustPointPositionForLabelHeight(angle, textSize, position) {
   }
 }
 
-function drawPointLabels(scale) {
-  const ctx = scale.ctx;
-  const opts = scale.options;
-  const pointLabelOpts = opts.pointLabels;
-  const tickBackdropHeight = getTickBackdropHeight(opts);
-  const outerDistance = scale.getDistanceFromCenterForValue(opts.ticks.reverse ? scale.min : scale.max);
+function drawPointLabels(scale, labelCount) {
+  const {ctx, options: {pointLabels}} = scale;
 
-  ctx.save();
-
-  ctx.textBaseline = 'middle';
-
-  for (let i = scale.chart.data.labels.length - 1; i >= 0; i--) {
-    // Extra pixels out for some label spacing
-    const extra = (i === 0 ? tickBackdropHeight / 2 : 0);
-    const pointLabelPosition = scale.getPointPosition(i, outerDistance + extra + 5);
-
-    const optsAtIndex = pointLabelOpts.setContext(scale.getContext(i));
+  for (let i = labelCount - 1; i >= 0; i--) {
+    const optsAtIndex = pointLabels.setContext(scale.getContext(i));
     const plFont = toFont(optsAtIndex.font);
-    const angle = toDegrees(scale.getIndexAngle(i));
-    adjustPointPositionForLabelHeight(angle, scale._pointLabelSizes[i], pointLabelPosition);
+    const {x, y, textAlign, left, top, right, bottom} = scale._pointLabelItems[i];
+    const {backdropColor} = optsAtIndex;
+
+    if (!isNullOrUndef(backdropColor)) {
+      const padding = toPadding(optsAtIndex.backdropPadding);
+      ctx.fillStyle = backdropColor;
+      ctx.fillRect(left - padding.left, top - padding.top, right - left + padding.width, bottom - top + padding.height);
+    }
+
     renderText(
       ctx,
-      scale.pointLabels[i],
-      pointLabelPosition.x,
-      pointLabelPosition.y + (plFont.lineHeight / 2),
+      scale._pointLabels[i],
+      x,
+      y + (plFont.lineHeight / 2),
       plFont,
       {
         color: optsAtIndex.color,
-        textAlign: getTextAlignForAngle(angle),
+        textAlign: textAlign,
+        textBaseline: 'middle'
       }
     );
   }
-  ctx.restore();
 }
 
-function drawRadiusLine(scale, gridLineOpts, radius) {
-  const ctx = scale.ctx;
-  const circular = gridLineOpts.circular;
-  const valueCount = scale.chart.data.labels.length;
-
-  const lineColor = gridLineOpts.color;
-  const lineWidth = gridLineOpts.lineWidth;
-  let pointPosition;
-
-  if ((!circular && !valueCount) || !lineColor || !lineWidth || radius < 0) {
-    return;
-  }
-
-  ctx.save();
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = lineWidth;
-  ctx.setLineDash(gridLineOpts.borderDash);
-  ctx.lineDashOffset = gridLineOpts.borderDashOffset;
-
-  ctx.beginPath();
+function pathRadiusLine(scale, radius, circular, labelCount) {
+  const {ctx} = scale;
   if (circular) {
     // Draw circular arcs between the points
     ctx.arc(scale.xCenter, scale.yCenter, radius, 0, TAU);
   } else {
     // Draw straight lines connecting each index
-    pointPosition = scale.getPointPosition(0, radius);
+    let pointPosition = scale.getPointPosition(0, radius);
     ctx.moveTo(pointPosition.x, pointPosition.y);
 
-    for (let i = 1; i < valueCount; i++) {
+    for (let i = 1; i < labelCount; i++) {
       pointPosition = scale.getPointPosition(i, radius);
       ctx.lineTo(pointPosition.x, pointPosition.y);
     }
   }
+}
+
+function drawRadiusLine(scale, gridLineOpts, radius, labelCount) {
+  const ctx = scale.ctx;
+  const circular = gridLineOpts.circular;
+
+  const {color, lineWidth} = gridLineOpts;
+
+  if ((!circular && !labelCount) || !color || !lineWidth || radius < 0) {
+    return;
+  }
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.setLineDash(gridLineOpts.borderDash);
+  ctx.lineDashOffset = gridLineOpts.borderDashOffset;
+
+  ctx.beginPath();
+  pathRadiusLine(scale, radius, circular, labelCount);
   ctx.closePath();
   ctx.stroke();
   ctx.restore();
@@ -238,7 +283,8 @@ export default class RadialLinearScale extends LinearScaleBase {
     /** @type {number} */
     this.drawingArea = undefined;
     /** @type {string[]} */
-    this.pointLabels = [];
+    this._pointLabels = [];
+    this._pointLabelItems = [];
   }
 
   setDimensions() {
@@ -278,7 +324,7 @@ export default class RadialLinearScale extends LinearScaleBase {
     LinearScaleBase.prototype.generateTickLabels.call(me, ticks);
 
     // Point labels
-    me.pointLabels = me.chart.data.labels.map((value, index) => {
+    me._pointLabels = me.getLabels().map((value, index) => {
       const label = callCallback(me.options.pointLabels.callback, [value, index], me);
       return label || label === 0 ? label : '';
     });
@@ -311,9 +357,9 @@ export default class RadialLinearScale extends LinearScaleBase {
     radiusReductionTop = numberOrZero(radiusReductionTop);
     radiusReductionBottom = numberOrZero(radiusReductionBottom);
 
-    me.drawingArea = Math.min(
+    me.drawingArea = Math.max(largestPossibleRadius / 2, Math.min(
       Math.floor(largestPossibleRadius - (radiusReductionLeft + radiusReductionRight) / 2),
-      Math.floor(largestPossibleRadius - (radiusReductionTop + radiusReductionBottom) / 2));
+      Math.floor(largestPossibleRadius - (radiusReductionTop + radiusReductionBottom) / 2)));
     me.setCenterPoint(radiusReductionLeft, radiusReductionRight, radiusReductionTop, radiusReductionBottom);
   }
 
@@ -329,11 +375,8 @@ export default class RadialLinearScale extends LinearScaleBase {
   }
 
   getIndexAngle(index) {
-    const chart = this.chart;
-    const angleMultiplier = TAU / chart.data.labels.length;
-    const options = chart.options || {};
-    const startAngle = options.startAngle || 0;
-
+    const angleMultiplier = TAU / this.getLabels().length;
+    const startAngle = this.options.startAngle || 0;
     return _normalizeAngle(index * angleMultiplier + toRadians(startAngle));
   }
 
@@ -380,6 +423,34 @@ export default class RadialLinearScale extends LinearScaleBase {
     return this.getPointPositionForValue(index || 0, this.getBaseValue());
   }
 
+  getPointLabelPosition(index) {
+    const {left, top, right, bottom} = this._pointLabelItems[index];
+    return {
+      left,
+      top,
+      right,
+      bottom,
+    };
+  }
+
+  /**
+	 * @protected
+	 */
+  drawBackground() {
+    const me = this;
+    const {backgroundColor, grid: {circular}} = me.options;
+    if (backgroundColor) {
+      const ctx = me.ctx;
+      ctx.save();
+      ctx.beginPath();
+      pathRadiusLine(me, me.getDistanceFromCenterForValue(me._endValue), circular, me.getLabels().length);
+      ctx.closePath();
+      ctx.fillStyle = backgroundColor;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   /**
 	 * @protected
 	 */
@@ -387,31 +458,31 @@ export default class RadialLinearScale extends LinearScaleBase {
     const me = this;
     const ctx = me.ctx;
     const opts = me.options;
-    const gridLineOpts = opts.gridLines;
-    const angleLineOpts = opts.angleLines;
+    const {angleLines, grid} = opts;
+    const labelCount = me.getLabels().length;
+
     let i, offset, position;
 
     if (opts.pointLabels.display) {
-      drawPointLabels(me);
+      drawPointLabels(me, labelCount);
     }
 
-    if (gridLineOpts.display) {
+    if (grid.display) {
       me.ticks.forEach((tick, index) => {
         if (index !== 0) {
-          offset = me.getDistanceFromCenterForValue(me.ticks[index].value);
-          const optsAtIndex = gridLineOpts.setContext(me.getContext(index - 1));
-          drawRadiusLine(me, optsAtIndex, offset);
+          offset = me.getDistanceFromCenterForValue(tick.value);
+          const optsAtIndex = grid.setContext(me.getContext(index - 1));
+          drawRadiusLine(me, optsAtIndex, offset, labelCount);
         }
       });
     }
 
-    if (angleLineOpts.display) {
+    if (angleLines.display) {
       ctx.save();
 
-      for (i = me.chart.data.labels.length - 1; i >= 0; i--) {
-        const optsAtIndex = angleLineOpts.setContext(me.getContext(i));
-        const lineWidth = optsAtIndex.lineWidth;
-        const color = optsAtIndex.color;
+      for (i = me.getLabels().length - 1; i >= 0; i--) {
+        const optsAtIndex = angleLines.setContext(me.getContext(i));
+        const {color, lineWidth} = optsAtIndex;
 
         if (!lineWidth || !color) {
           continue;
@@ -470,11 +541,12 @@ export default class RadialLinearScale extends LinearScaleBase {
         width = ctx.measureText(tick.label).width;
         ctx.fillStyle = optsAtIndex.backdropColor;
 
+        const padding = toPadding(optsAtIndex.backdropPadding);
         ctx.fillRect(
-          -width / 2 - optsAtIndex.backdropPaddingX,
-          -offset - tickFont.size / 2 - optsAtIndex.backdropPaddingY,
-          width + optsAtIndex.backdropPaddingX * 2,
-          tickFont.size + optsAtIndex.backdropPaddingY * 2
+          -width / 2 - padding.left,
+          -offset - tickFont.size / 2 - padding.top,
+          width + padding.width,
+          tickFont.size + padding.height
         );
       }
 
@@ -511,9 +583,11 @@ RadialLinearScale.defaults = {
     borderDashOffset: 0.0
   },
 
-  gridLines: {
+  grid: {
     circular: false
   },
+
+  startAngle: 0,
 
   // label settings
   ticks: {
@@ -523,16 +597,18 @@ RadialLinearScale.defaults = {
     // String - The colour of the label backdrop
     backdropColor: 'rgba(255,255,255,0.75)',
 
-    // Number - The backdrop padding above & below the label in pixels
-    backdropPaddingY: 2,
-
-    // Number - The backdrop padding to the side of the label in pixels
-    backdropPaddingX: 2,
+    // Number/Object - The backdrop padding of the label in pixels
+    backdropPadding: 2,
 
     callback: Ticks.formatters.numeric
   },
 
   pointLabels: {
+    backdropColor: undefined,
+
+    // Number - The backdrop padding above & below the label in pixels
+    backdropPadding: 2,
+
     // Boolean - if true, show point labels
     display: true,
 
@@ -544,7 +620,10 @@ RadialLinearScale.defaults = {
     // Function - Used to convert point labels
     callback(label) {
       return label;
-    }
+    },
+
+    // Number - Additionl padding between scale and pointLabel
+    padding: 5
   }
 };
 
@@ -556,6 +635,6 @@ RadialLinearScale.defaultRoutes = {
 
 RadialLinearScale.descriptors = {
   angleLines: {
-    _fallback: 'gridLines'
+    _fallback: 'grid'
   }
 };

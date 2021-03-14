@@ -1096,12 +1096,13 @@ describe('Time scale tests', function() {
             ticks: {
               source: 'data',
               autoSkip: true,
+              autoSkipPadding: 0,
               maxRotation: 0
             }
           },
           y: {
             type: 'linear',
-            gridLines: {
+            grid: {
               drawBorder: false
             }
           }
@@ -1113,7 +1114,7 @@ describe('Time scale tests', function() {
     });
     const scale = chart.scales.x;
     expect(scale.getPixelForDecimal(0)).toBeCloseToPixel(29);
-    expect(scale.getPixelForDecimal(1.0)).toBeCloseToPixel(494);
+    expect(scale.getPixelForDecimal(1.0)).toBeCloseToPixel(509);
   });
 
   ['data', 'labels'].forEach(function(source) {

@@ -90,7 +90,7 @@ export const toPercentage = (value, dimension) =>
     parseFloat(value) / 100
     : value / dimension;
 
-export const toPixels = (value, dimension) =>
+export const toDimension = (value, dimension) =>
   typeof value === 'string' && value.endsWith('%') ?
     parseFloat(value) / 100 * dimension
     : +value;
@@ -306,11 +306,8 @@ export function resolveObjectKey(obj, key) {
   }
   let pos = 0;
   let idx = indexOfDotOrLength(key, pos);
-  while (idx > pos) {
+  while (obj && idx > pos) {
     obj = obj[key.substr(pos, idx - pos)];
-    if (!obj) {
-      break;
-    }
     pos = idx + 1;
     idx = indexOfDotOrLength(key, pos);
   }

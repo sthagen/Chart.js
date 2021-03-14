@@ -64,14 +64,14 @@ describe('Core.scale', function() {
           'January 2019', 'February 2019', 'March 2019', 'April 2019',
           'May 2019', 'June 2019', 'July 2019', 'August 2019',
           'September 2019', 'October 2019', 'November 2019', 'December 2019',
-          'January 2020', 'February 2020'
+          'January 2020', 'February 2020', 'March 2020', 'April 2020'
         ],
         datasets: [{
-          data: [12, 19, 3, 5, 2, 3, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+          data: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7]
         }]
       });
 
-      expect(lastTick(chart).label).toEqual('January 2020');
+      expect(lastTick(chart).label).toEqual('March 2020');
     });
   });
 
@@ -130,8 +130,8 @@ describe('Core.scale', function() {
         options: {
           scales: {
             x: {
-              gridLines: {
-                offsetGridLines: test.offsetGridLines,
+              grid: {
+                offset: test.offsetGridLines,
                 drawTicks: false
               },
               ticks: {
@@ -178,8 +178,8 @@ describe('Core.scale', function() {
             },
             y: {
               type: 'category',
-              gridLines: {
-                offsetGridLines: test.offsetGridLines,
+              grid: {
+                offset: test.offsetGridLines,
                 drawTicks: false
               },
               ticks: {
@@ -466,7 +466,7 @@ describe('Core.scale', function() {
           scales: {
             x: {
               type: 'customScale',
-              gridLines: {
+              grid: {
                 z: 10
               },
               ticks: {
@@ -492,7 +492,7 @@ describe('Core.scale', function() {
               ticks: {
                 z: 10
               },
-              gridLines: {
+              grid: {
                 z: 10
               }
             }
@@ -528,7 +528,7 @@ describe('Core.scale', function() {
           scales: {
             x: {
               type: 'linear',
-              gridLines: {
+              grid: {
                 z: 11
               }
             }
@@ -547,7 +547,7 @@ describe('Core.scale', function() {
               ticks: {
                 z: 10
               },
-              gridLines: {
+              grid: {
                 z: 11
               }
             }

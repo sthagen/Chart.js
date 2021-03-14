@@ -22,7 +22,7 @@ Chart.js 3.0 introduces a number of breaking changes. Chart.js 2.0 was released 
 * Chart.js is no longer providing the `Chart.bundle.js` and `Chart.bundle.min.js`. Please see the [installation](installation.md) and [integration](integration.md) docs for details on the recommended way to setup Chart.js if you were using these builds.
 * `moment` is no longer specified as an npm dependency. If you are using the `time` or `timeseries` scales, you must include one of [the available adapters](https://github.com/chartjs/awesome#adapters) and corresponding date library. You no longer need to exclude moment from your build.
 * The `Chart` constructor will throw an error if the canvas/context provided is already in use
-* Chart.js 3 is tree-shakeable. So if you are using it as an `npm` module in a project, you need to import and register the controllers, elements, scales and plugins you want to use. You will not have to call `register` if importing Chart.js via a `script` tag, but will not get the tree shaking benefits in this case. Here is an example of registering components:
+* Chart.js 3 is tree-shakeable. So if you are using it as an `npm` module in a project and want to make use of this feature, you need to import and register the controllers, elements, scales and plugins you want to use. You will not have to call `register` if importing Chart.js via a `script` tag or from the [`auto`](integration.md#bundlers-webpack-rollup-etc) register path as an `npm` module, but will not get the tree shaking benefits in this case. Here is an example of registering components:
 
 ```javascript
 import { Chart, LineController, LineElement, PointElement, LinearScale, Title } from `chart.js`
@@ -101,6 +101,7 @@ A number of changes were made to the configuration options passed to the `Chart`
 * `scales.[x/y]Axes.zeroLine*` options of axes were removed. Use scriptable scale options instead.
 * The dataset option `steppedLine` was removed. Use `stepped`
 * The chart option `showLines` was renamed to `showLine` to match the dataset option.
+* The chart option `startAngle` was moved to `radial` scale options.
 * To override the platform class used in a chart instance, pass `platform: PlatformClass` in the config object. Note that the class should be passed, not an instance of the class.
 * `aspectRatio` defaults to 1 for doughnut, pie, polarArea, and radar charts
 * `TimeScale` does not read `t` from object data by default anymore. The default property is `x` or `y`, depending on the orientation. See [data structures](../general/data-structures.md) for details on how to change the default.
@@ -228,10 +229,13 @@ Animation system was completely rewritten in Chart.js v3. Each property can now 
 
 #### Ticks
 
-* `options.gridLines.tickMarkLength` was renamed to `options.gridLines.tickLength`.
+* `options.gridLines` was renamed to `options.grid`
+* `options.gridLines.offsetGridLines` was renamed to `options.grid.offset`.
+* `options.gridLines.tickMarkLength` was renamed to `options.grid.tickLength`.
 * `options.ticks.fixedStepSize` is no longer used. Use `options.ticks.stepSize`.
 * `options.ticks.major` and `options.ticks.minor` were replaced with scriptable options for tick fonts.
 * `Chart.Ticks.formatters.linear` was renamed to `Chart.Ticks.formatters.numeric`.
+* `options.ticks.backdropPaddingX` and `options.ticks.backdropPaddingY` were replaced with `options.ticks.backdropPadding` in the radial linear scale.
 
 #### Tooltip
 
@@ -415,6 +419,10 @@ The following properties were renamed during v3 development:
 * `helpers.drawRoundedRectangle` was renamed to `helpers.roundedRect`
 * `helpers.getValueOrDefault` was renamed to `helpers.valueOrDefault`
 * `LayoutItem.fullWidth` was renamed to `LayoutItem.fullSize`
+* `Point.controlPointPreviousX` was renamed to `Point.cp1x`
+* `Point.controlPointPreviousY` was renamed to `Point.cp1y`
+* `Point.controlPointNextX` was renamed to `Point.cp2x`
+* `Point.controlPointNextY` was renamed to `Point.cp2y`
 * `Scale.calculateTickRotation` was renamed to `Scale.calculateLabelRotation`
 * `Tooltip.options.legendColorBackgroupd` was renamed to `Tooltip.options.multiKeyBackground`
 
@@ -449,6 +457,7 @@ The private APIs listed below were renamed:
 * `DatasetController.resyncElements` was renamed to `DatasetController._resyncElements`
 * `LayoutItem.isFullWidth` was renamed to `LayoutItem.isFullSize`
 * `RadialLinearScale.setReductions` was renamed to `RadialLinearScale._setReductions`
+* `RadialLinearScale.pointLabels` was renamed to `RadialLinearScale._pointLabels`
 * `Scale.handleMargins` was renamed to `Scale._handleMargins`
 
 ### Changed

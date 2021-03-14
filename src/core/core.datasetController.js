@@ -66,8 +66,9 @@ function getSortedDatasetIndices(chart, filterVisible) {
   return keys;
 }
 
-function applyStack(stack, value, dsIndex, allOther) {
+function applyStack(stack, value, dsIndex, options) {
   const keys = stack.keys;
+  const singleMode = options.mode === 'single';
   let i, ilen, datasetIndex, otherValue;
 
   if (value === null) {
@@ -77,13 +78,13 @@ function applyStack(stack, value, dsIndex, allOther) {
   for (i = 0, ilen = keys.length; i < ilen; ++i) {
     datasetIndex = +keys[i];
     if (datasetIndex === dsIndex) {
-      if (allOther) {
+      if (options.all) {
         continue;
       }
       break;
     }
     otherValue = stack.values[datasetIndex];
-    if (isFinite(otherValue) && (value === 0 || sign(value) === sign(otherValue))) {
+    if (isFinite(otherValue) && (singleMode || (value === 0 || sign(value) === sign(otherValue)))) {
       value += otherValue;
     }
   }
@@ -157,6 +158,7 @@ function createDatasetContext(parent, index, dataset) {
       dataset,
       datasetIndex: index,
       index,
+      mode: 'default',
       type: 'dataset'
     }
   );
@@ -177,12 +179,13 @@ function createDataContext(parent, index, point, raw, element) {
 
 function clearStacks(meta, items) {
   items = items || meta._parsed;
-  items.forEach((parsed) => {
-    if (parsed._stacks[meta.vScale.id] === undefined || parsed._stacks[meta.vScale.id][meta.index] === undefined) {
+  for (const parsed of items) {
+    const stacks = parsed._stacks;
+    if (!stacks || stacks[meta.vScale.id] === undefined || stacks[meta.vScale.id][meta.index] === undefined) {
       return;
     }
-    delete parsed._stacks[meta.vScale.id][meta.index];
-  });
+    delete stacks[meta.vScale.id][meta.index];
+  }
 }
 
 const isDirectUpdateMode = (mode) => mode === 'reset' || mode === 'none';
@@ -310,6 +313,7 @@ export default class DatasetController {
       if (me._data) {
         // This case happens when the user replaced the data array instance.
         unlistenArrayEvents(me._data, me);
+        clearStacks(me._cachedMeta);
       }
       if (data && Object.isExtensible(data)) {
         listenArrayEvents(data, me);
@@ -517,7 +521,7 @@ export default class DatasetController {
   /**
 	 * @protected
 	 */
-  applyStack(scale, parsed) {
+  applyStack(scale, parsed, mode) {
     const chart = this.chart;
     const meta = this._cachedMeta;
     const value = parsed[scale.axis];
@@ -525,7 +529,7 @@ export default class DatasetController {
       keys: getSortedDatasetIndices(chart, true),
       values: parsed._stacks[scale.axis]
     };
-    return applyStack(stack, value, meta.index);
+    return applyStack(stack, value, meta.index, {mode});
   }
 
   /**
@@ -541,7 +545,7 @@ export default class DatasetController {
       // in addition to the stacked value
       range.min = Math.min(range.min, value);
       range.max = Math.max(range.max, value);
-      value = applyStack(stack, parsedValue, this._cachedMeta.index, true);
+      value = applyStack(stack, parsedValue, this._cachedMeta.index, {all: true});
     }
     range.min = Math.min(range.min, value);
     range.max = Math.max(range.max, value);
@@ -827,7 +831,7 @@ export default class DatasetController {
 	 * @protected
 	 */
   updateSharedOptions(sharedOptions, mode, newOptions) {
-    if (sharedOptions) {
+    if (sharedOptions && !isDirectUpdateMode(mode)) {
       this._resolveAnimations(undefined, mode).update(sharedOptions, newOptions);
     }
   }

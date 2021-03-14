@@ -33,7 +33,7 @@ module.exports = [
       resolve(),
       cleanup({
         sourcemap: true
-      })
+      }),
     ],
     output: {
       name: 'Chart',
@@ -52,7 +52,7 @@ module.exports = [
         output: {
           preamble: banner
         }
-      })
+      }),
     ],
     output: {
       name: 'Chart',
@@ -72,7 +72,7 @@ module.exports = [
       resolve(),
       cleanup({
         sourcemap: true
-      })
+      }),
     ],
     output: {
       dir: './',

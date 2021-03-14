@@ -27,26 +27,30 @@ describe('Test the radial linear scale', function() {
         borderDashOffset: 0.0
       },
 
-      gridLines: {
+      grid: {
         circular: false
       },
+
+      startAngle: 0,
 
       ticks: {
         color: Chart.defaults.color,
         showLabelBackdrop: true,
         backdropColor: 'rgba(255,255,255,0.75)',
-        backdropPaddingY: 2,
-        backdropPaddingX: 2,
+        backdropPadding: 2,
         callback: defaultConfig.ticks.callback
       },
 
       pointLabels: {
+        backdropColor: undefined,
+        backdropPadding: 2,
         color: Chart.defaults.color,
         display: true,
         font: {
           size: 10
         },
-        callback: defaultConfig.pointLabels.callback
+        callback: defaultConfig.pointLabels.callback,
+        padding: 5
       }
     });
 
@@ -324,7 +328,7 @@ describe('Test the radial linear scale', function() {
     });
 
     expect(getLabels(chart.scales.r)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8']);
-    expect(chart.scales.r.pointLabels).toEqual(['label1', 'label2', 'label3', 'label4', 'label5']);
+    expect(chart.scales.r._pointLabels).toEqual(['label1', 'label2', 'label3', 'label4', 'label5']);
   });
 
   it('Should build point labels using the user supplied callback', function() {
@@ -349,7 +353,7 @@ describe('Test the radial linear scale', function() {
       }
     });
 
-    expect(chart.scales.r.pointLabels).toEqual(['0', '1', '2', '3', '4']);
+    expect(chart.scales.r._pointLabels).toEqual(['0', '1', '2', '3', '4']);
   });
 
   it('Should build point labels from falsy values', function() {
@@ -363,7 +367,7 @@ describe('Test the radial linear scale', function() {
       }
     });
 
-    expect(chart.scales.r.pointLabels).toEqual([0, '', '', '', '', '']);
+    expect(chart.scales.r._pointLabels).toEqual([0, '', '', '', '', '']);
   });
 
   it('should correctly set the center point', function() {
@@ -500,6 +504,7 @@ describe('Test the radial linear scale', function() {
       options: {
         scales: {
           r: {
+            startAngle: 15,
             pointLabels: {
               callback: function(value, index) {
                 return index.toString();
@@ -507,7 +512,6 @@ describe('Test the radial linear scale', function() {
             }
           }
         },
-        startAngle: 15
       }
     });
 
@@ -521,7 +525,7 @@ describe('Test the radial linear scale', function() {
       expect(radToNearestDegree(chart.scales.r.getIndexAngle(i))).toBe(15 + (slice * i));
     }
 
-    chart.options.startAngle = 0;
+    chart.scales.r.options.startAngle = 0;
     chart.update();
 
     for (var x = 0; x < 5; x++) {
@@ -569,7 +573,7 @@ describe('Test the radial linear scale', function() {
       textAlign: ['right', 'right', 'left', 'left', 'left'],
       y: [82, 366, 506, 319, 53]
     }].forEach(function(expected) {
-      chart.options.startAngle = expected.startAngle;
+      scale.options.startAngle = expected.startAngle;
       chart.update();
 
       scale.ctx = window.createMockContext();

@@ -427,7 +427,7 @@ export interface ChartMeta<TElement extends Element = Element, TDatasetElement e
   vScale?: Scale;
 
   _sorted: boolean;
-  _stacked: boolean;
+  _stacked: boolean | 'single';
   _parsed: unknown[];
 }
 
@@ -600,7 +600,7 @@ export class DatasetController<
     range: { min: number; max: number },
     scale: Scale,
     parsed: unknown[],
-    stack: boolean
+    stack: boolean | string
   ): void;
   protected getMinMax(scale: Scale, canStack?: boolean): { min: number; max: number };
 }
@@ -2619,7 +2619,7 @@ export interface GridLineOptions {
   /**
    * @default false
    */
-  offsetGridLines: boolean;
+  offset: boolean;
 }
 
 export interface TickOptions {
@@ -2696,7 +2696,7 @@ export interface CartesianScaleOptions extends CoreScaleOptions {
    */
   offset: boolean;
 
-  gridLines: GridLineOptions;
+  grid: GridLineOptions;
 
   title: {
     display: boolean;
@@ -2993,7 +2993,7 @@ export type RadialLinearScaleOptions = CoreScaleOptions & {
    */
   beginAtZero: boolean;
 
-  gridLines: GridLineOptions;
+  grid: GridLineOptions;
 
   /**
    * User defined minimum number for the scale, overrides minimum value from data.
@@ -3005,6 +3005,17 @@ export type RadialLinearScaleOptions = CoreScaleOptions & {
   max: number;
 
   pointLabels: {
+    /**
+     * Background color of the point label.
+     * @default undefined
+     */
+    backdropColor: Scriptable<Color, ScriptableScaleContext>;
+    /**
+     * Padding of label backdrop.
+     * @default 2
+     */
+     backdropPadding: Scriptable<number | ChartArea, ScriptableScaleContext>;
+
     /**
      * if true, point labels are shown.
      * @default true
@@ -3043,15 +3054,10 @@ export type RadialLinearScaleOptions = CoreScaleOptions & {
      */
     backdropColor: Scriptable<Color, ScriptableScaleContext>;
     /**
-     * Horizontal padding of label backdrop.
+     * Padding of label backdrop.
      * @default 2
      */
-    backdropPaddingX: number;
-    /**
-     * Vertical padding of label backdrop.
-     * @default 2
-     */
-    backdropPaddingY: number;
+    backdropPadding: number | ChartArea;
 
     /**
      * The Intl.NumberFormat options used by the default label formatter
@@ -3089,6 +3095,7 @@ export interface RadialLinearScale<O extends RadialLinearScaleOptions = RadialLi
   getValueForDistanceFromCenter(distance: number): number;
   getPointPosition(index: number, distanceFromCenter: number): { x: number; y: number; angle: number };
   getPointPositionForValue(index: number, value: number): { x: number; y: number; angle: number };
+  getPointLabelPosition(index: number): ChartArea;
   getBasePosition(index: number): { x: number; y: number; angle: number };
 }
 export const RadialLinearScale: ChartComponent & {
@@ -3183,7 +3190,7 @@ export interface ChartTypeRegistry {
     scales: keyof CartesianScaleTypeRegistry;
   };
   bubble: {
-    chartOptions: EmptyObject;
+    chartOptions: unknown;
     datasetOptions: BubbleControllerDatasetOptions;
     defaultDataPoint: BubbleDataPoint;
     parsedDataType: BubbleParsedData;
@@ -3267,7 +3274,7 @@ export interface ChartData<
   TData = DefaultDataPoint<TType>,
   TLabel = unknown
 > {
-  labels: TLabel[];
+  labels?: TLabel[];
   datasets: ChartDataset<TType, TData>[];
 }
 
