@@ -1078,6 +1078,10 @@ export interface CoreScaleOptions {
    */
   display: boolean | 'auto';
   /**
+   * Align pixel values to device pixels
+   */
+  alignToPixels: boolean;
+  /**
    * Reverse the scale.
    * @default false
    */
@@ -1195,6 +1199,12 @@ export interface Scale<O extends CoreScaleOptions = CoreScaleOptions> extends El
    * @return {string}
    */
   getLabelForValue(value: number): string;
+
+  /**
+   * Returns the grid line width at given value
+   */
+  getLineWidthForValue(value: number): number;
+
   /**
    * Returns the location of the given data point. Value can either be an index or a numerical value
    * The coordinate (0, 0) is at the upper-left corner of the canvas
@@ -2713,7 +2723,7 @@ export interface CartesianScaleOptions extends CoreScaleOptions {
    *   If true, data will be comprised between datasets of data
    * @default false
    */
-  stacked?: boolean;
+  stacked?: boolean | 'single';
 
   ticks: TickOptions & {
     /**

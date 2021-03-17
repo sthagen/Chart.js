@@ -691,9 +691,9 @@ describe('Chart.controllers.bar', function() {
     var bar2 = meta.data[1];
 
     expect(bar1.x).toBeCloseToPixel(179);
-    expect(bar1.y).toBeCloseToPixel(114);
-    expect(bar2.x).toBeCloseToPixel(435);
-    expect(bar2.y).toBeCloseToPixel(0);
+    expect(bar1.y).toBeCloseToPixel(117);
+    expect(bar2.x).toBeCloseToPixel(431);
+    expect(bar2.y).toBeCloseToPixel(4);
   });
 
   it('should get the bar points for hidden dataset', function() {
@@ -1528,9 +1528,10 @@ describe('Chart.controllers.bar', function() {
     });
 
     var data = chart.getDatasetMeta(0).data;
+    var halfBaseLine = chart.scales.y.getLineWidthForValue(0) / 2;
 
-    expect(data[0].base - minBarLength).toEqual(data[0].y);
-    expect(data[1].base + minBarLength).toEqual(data[1].y);
+    expect(data[0].base - minBarLength + halfBaseLine).toEqual(data[0].y);
+    expect(data[1].base + minBarLength - halfBaseLine).toEqual(data[1].y);
   });
 
   it('minBarLength settings should be used on X axis on horizontal bar chart', function() {
@@ -1547,9 +1548,10 @@ describe('Chart.controllers.bar', function() {
     });
 
     var data = chart.getDatasetMeta(0).data;
+    var halfBaseLine = chart.scales.x.getLineWidthForValue(0) / 2;
 
-    expect(data[0].base + minBarLength).toEqual(data[0].x);
-    expect(data[1].base - minBarLength).toEqual(data[1].x);
+    expect(data[0].base + minBarLength - halfBaseLine).toEqual(data[0].x);
+    expect(data[1].base - minBarLength + halfBaseLine).toEqual(data[1].x);
   });
 
   it('should respect the data visibility settings', function() {

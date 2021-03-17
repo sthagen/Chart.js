@@ -674,6 +674,7 @@ export default class Scale extends Element {
     me._endPixel = endPixel;
     me._reversePixels = reversePixels;
     me._length = endPixel - startPixel;
+    me._alignToPixels = me.options.alignToPixels;
   }
 
   afterUpdate() {
@@ -1122,7 +1123,8 @@ export default class Scale extends Element {
       decimal = 1 - decimal;
     }
 
-    return _int16Range(me._startPixel + decimal * me._length);
+    const pixel = me._startPixel + decimal * me._length;
+    return _int16Range(me._alignToPixels ? _alignPixel(me.chart, pixel, 0) : pixel);
   }
 
   /**
@@ -1604,6 +1606,21 @@ export default class Scale extends Element {
     }
   }
 
+  getLineWidthForValue(value) {
+    const me = this;
+    const grid = me.options.grid;
+    if (!me._isVisible() || !grid.display) {
+      return 0;
+    }
+    const ticks = me.ticks;
+    const index = ticks.findIndex(t => t.value === value);
+    if (index >= 0) {
+      const opts = grid.setContext(me.getContext(index));
+      return opts.lineWidth;
+    }
+    return 0;
+  }
+
   /**
 	 * @protected
 	 */
@@ -1617,41 +1634,46 @@ export default class Scale extends Element {
     const items = me._gridLineItems || (me._gridLineItems = me._computeGridLineItems(chartArea));
     let i, ilen;
 
+    const drawLine = (p1, p2, style) => {
+      if (!style.width || !style.color) {
+        return;
+      }
+      ctx.save();
+      ctx.lineWidth = style.width;
+      ctx.strokeStyle = style.color;
+      ctx.setLineDash(style.borderDash || []);
+      ctx.lineDashOffset = style.borderDashOffset;
+
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+      ctx.restore();
+    };
+
     if (grid.display) {
       for (i = 0, ilen = items.length; i < ilen; ++i) {
         const item = items[i];
-        const {color, tickColor, tickWidth, width} = item;
 
-        if (width && color && grid.drawOnChartArea) {
-          ctx.save();
-          ctx.lineWidth = width;
-          ctx.strokeStyle = color;
-          if (ctx.setLineDash) {
-            ctx.setLineDash(item.borderDash);
-            ctx.lineDashOffset = item.borderDashOffset;
-          }
-
-          ctx.beginPath();
-          ctx.moveTo(item.x1, item.y1);
-          ctx.lineTo(item.x2, item.y2);
-          ctx.stroke();
-          ctx.restore();
+        if (grid.drawOnChartArea) {
+          drawLine(
+            {x: item.x1, y: item.y1},
+            {x: item.x2, y: item.y2},
+            item
+          );
         }
 
-        if (tickWidth && tickColor && grid.drawTicks) {
-          ctx.save();
-          ctx.lineWidth = tickWidth;
-          ctx.strokeStyle = tickColor;
-          if (ctx.setLineDash) {
-            ctx.setLineDash(item.tickBorderDash);
-            ctx.lineDashOffset = item.tickBorderDashOffset;
-          }
-
-          ctx.beginPath();
-          ctx.moveTo(item.tx1, item.ty1);
-          ctx.lineTo(item.tx2, item.ty2);
-          ctx.stroke();
-          ctx.restore();
+        if (grid.drawTicks) {
+          drawLine(
+            {x: item.tx1, y: item.ty1},
+            {x: item.tx2, y: item.ty2},
+            {
+              color: item.tickColor,
+              width: item.tickWidth,
+              borderDash: item.tickBorderDash,
+              borderDashOffset: item.tickBorderDashOffset
+            }
+          );
         }
       }
     }
@@ -1672,13 +1694,10 @@ export default class Scale extends Element {
         y2 = _alignPixel(chart, me.bottom, lastLineWidth) + lastLineWidth / 2;
         x1 = x2 = borderValue;
       }
-
-      ctx.lineWidth = axisWidth;
-      ctx.strokeStyle = edgeOpts.borderColor;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+      drawLine(
+        {x: x1, y: y1},
+        {x: x2, y: y2},
+        {width: axisWidth, color: edgeOpts.borderColor});
     }
   }
 
