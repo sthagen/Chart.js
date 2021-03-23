@@ -1260,10 +1260,9 @@ export interface Scale<O extends CoreScaleOptions = CoreScaleOptions> extends El
 
   isFullSize(): boolean;
 }
-export const Scale: {
-  prototype: Scale;
-  new <O extends CoreScaleOptions = CoreScaleOptions>(cfg: AnyObject): Scale<O>;
-};
+export declare class Scale {
+  constructor(cfg: {id: string, type: string, ctx: CanvasRenderingContext2D, chart: Chart});
+}
 
 export interface ScriptableScaleContext {
   chart: Chart;
@@ -1967,7 +1966,7 @@ export interface FillerOptions {
   propagate: boolean;
 }
 
-export type FillTarget = number | string | { value: number } | 'start' | 'end' | 'origin' | 'stack' | false;
+export type FillTarget = number | string | { value: number } | 'start' | 'end' | 'origin' | 'stack' | boolean;
 
 export interface ComplexFillTarget {
   /**
@@ -3208,14 +3207,14 @@ export interface ChartTypeRegistry {
   line: {
     chartOptions: LineControllerChartOptions;
     datasetOptions: LineControllerDatasetOptions & FillerControllerDatasetOptions;
-    defaultDataPoint: ScatterDataPoint;
+    defaultDataPoint: ScatterDataPoint | number | null;
     parsedDataType: CartesianParsedData;
     scales: keyof CartesianScaleTypeRegistry;
   };
   scatter: {
     chartOptions: ScatterControllerChartOptions;
     datasetOptions: ScatterControllerDatasetOptions;
-    defaultDataPoint: ScatterDataPoint;
+    defaultDataPoint: ScatterDataPoint | number | null;
     parsedDataType: CartesianParsedData;
     scales: keyof CartesianScaleTypeRegistry;
   };
@@ -3250,7 +3249,7 @@ export interface ChartTypeRegistry {
   radar: {
     chartOptions: RadarControllerChartOptions;
     datasetOptions: RadarControllerDatasetOptions;
-    defaultDataPoint: number;
+    defaultDataPoint: number | null;
     parsedDataType: RadialParsedData;
     scales: keyof RadialScaleTypeRegistry;
   };
