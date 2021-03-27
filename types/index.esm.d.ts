@@ -1,17 +1,3 @@
-/**
- * Top-level type definitions. These are processed by Rollup and rollup-plugin-dts
- * to make a combined .d.ts file under dist; that way, all of the type definitions
- * appear directly within the "chart.js" module; that matches the layout of the
- * distributed chart.esm.js bundle and means that users of Chart.js can easily use
- * module augmentation to extend Chart.js's types and plugins within their own
- * code, like so:
- *
- * @example
- * declare module "chart.js" {
- *   // Add types here
- * }
- */
-
 import { DeepPartial, DistributiveArray, UnionToIntersection } from './utils';
 
 import { TimeUnit } from './adapters';
@@ -647,14 +633,13 @@ export interface Defaults extends CoreChartOptions<ChartType>, ElementChartOptio
 }
 
 export type Overrides = {
-  [key in ChartType]: DeepPartial<
+  [key in ChartType]:
     CoreChartOptions<key> &
     ElementChartOptions &
     PluginChartOptions<key> &
     DatasetChartOptions<ChartType> &
     ScaleChartOptions<key> &
-    ChartTypeRegistry[key]['chartOptions']
-    >;
+    ChartTypeRegistry[key]['chartOptions'];
 }
 
 export const defaults: Defaults;
@@ -2575,7 +2560,7 @@ export interface PluginOptionsByType<TType extends ChartType> {
   tooltip: TooltipOptions<TType>;
 }
 export interface PluginChartOptions<TType extends ChartType> {
-  plugins: Partial<PluginOptionsByType<TType>>;
+  plugins: PluginOptionsByType<TType>;
 }
 
 export interface GridLineOptions {
@@ -3259,9 +3244,12 @@ export interface ChartTypeRegistry {
 
 export type ChartType = keyof ChartTypeRegistry;
 
-export type ScaleOptionsByType<TScale extends ScaleType = ScaleType> = DeepPartial<
+export type ScaleOptionsByType<TScale extends ScaleType = ScaleType> =
   { [key in ScaleType]: { type: key } & ScaleTypeRegistry[key]['options'] }[TScale]
->;
+;
+
+// Convenience alias for creating and manipulating scale options in user code
+export type ScaleOptions<TScale extends ScaleType = ScaleType> = DeepPartial<ScaleOptionsByType<TScale>>;
 
 export type DatasetChartOptions<TType extends ChartType = ChartType> = {
   [key in TType]: {
