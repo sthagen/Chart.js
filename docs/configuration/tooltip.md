@@ -16,7 +16,7 @@ Namespace: `options.plugins.tooltip`, the global options for the chart tooltips 
 | `filter` | `function` | | Filter tooltip items. [more...](#filter-callback)
 | `backgroundColor` | [`Color`](../general/colors.md) | `'rgba(0, 0, 0, 0.8)'` | Background color of the tooltip.
 | `titleColor` | [`Color`](../general/colors.md) | `'#fff'` | Color of title text.
-| `titleFont` | `Font` | `{style: 'bold'}` | See [Fonts](../general/fonts.md).
+| `titleFont` | `Font` | `{weight: 'bold'}` | See [Fonts](../general/fonts.md).
 | `titleAlign` | `string` | `'left'` | Horizontal alignment of the title text lines. [more...](#alignment)
 | `titleSpacing` | `number` | `2` | Spacing to add to top and bottom of each title line.
 | `titleMarginBottom` | `number` | `6` | Margin to add on bottom of title section.
@@ -25,7 +25,7 @@ Namespace: `options.plugins.tooltip`, the global options for the chart tooltips 
 | `bodyAlign` | `string` | `'left'` | Horizontal alignment of the body text lines. [more...](#alignment)
 | `bodySpacing` | `number` | `2` | Spacing to add to top and bottom of each tooltip item.
 | `footerColor` | [`Color`](../general/colors.md) | `'#fff'` | Color of footer text.
-| `footerFont` | `Font` | `{style: 'bold'}` | See [Fonts](../general/fonts.md).
+| `footerFont` | `Font` | `{weight: 'bold'}` | See [Fonts](../general/fonts.md).
 | `footerAlign` | `string` | `'left'` | Horizontal alignment of the footer text lines. [more...](#alignment)
 | `footerSpacing` | `number` | `2` | Spacing to add to top and bottom of each footer line.
 | `footerMarginTop` | `number` | `6` | Margin to add before drawing the footer.
@@ -153,7 +153,7 @@ var chart = new Chart(ctx, {
 
 ### Label Color Callback
 
-For example, to return a red box for each item in the tooltip you could do:
+For example, to return a red box with a blue dashed border that has a border radius for each item in the tooltip you could do:
 
 ```javascript
 var chart = new Chart(ctx, {
@@ -165,8 +165,11 @@ var chart = new Chart(ctx, {
                 callbacks: {
                     labelColor: function(context) {
                         return {
-                            borderColor: 'rgb(255, 0, 0)',
-                            backgroundColor: 'rgb(255, 0, 0)'
+                            borderColor: 'rgb(0, 0, 255)',
+                            backgroundColor: 'rgb(255, 0, 0)',
+                            borderWidth: 2,
+                            borderDash: [2, 2],
+                            borderRadius: 2,
                         };
                     },
                     labelTextColor: function(context) {

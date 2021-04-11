@@ -104,7 +104,7 @@ describe('Plugin.Tooltip', function() {
       expect(tooltip.options.titleColor).toEqual('#fff');
       expect(tooltip.options.titleFont).toEqualOptions({
         family: defaults.font.family,
-        style: 'bold',
+        weight: 'bold',
         size: defaults.font.size,
       });
 
@@ -117,7 +117,7 @@ describe('Plugin.Tooltip', function() {
       expect(tooltip.options.footerColor).toEqual('#fff');
       expect(tooltip.options.footerFont).toEqualOptions({
         family: defaults.font.family,
-        style: 'bold',
+        weight: 'bold',
         size: defaults.font.size,
       });
 
@@ -156,10 +156,18 @@ describe('Plugin.Tooltip', function() {
         footer: [],
         labelColors: [{
           borderColor: defaults.borderColor,
-          backgroundColor: defaults.backgroundColor
+          backgroundColor: defaults.backgroundColor,
+          borderWidth: 1,
+          borderDash: undefined,
+          borderDashOffset: undefined,
+          borderRadius: 0,
         }, {
           borderColor: defaults.borderColor,
-          backgroundColor: defaults.backgroundColor
+          backgroundColor: defaults.backgroundColor,
+          borderWidth: 1,
+          borderDash: undefined,
+          borderDashOffset: undefined,
+          borderRadius: 0,
         }]
       }));
 
@@ -261,7 +269,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     }));
 
@@ -273,7 +281,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.footerFont).toEqualOptions({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     });
 
@@ -307,7 +315,11 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.labelColors).toEqual([{
       borderColor: defaults.borderColor,
-      backgroundColor: defaults.backgroundColor
+      backgroundColor: defaults.backgroundColor,
+      borderWidth: 1,
+      borderDash: undefined,
+      borderDashOffset: undefined,
+      borderRadius: 0,
     }]);
 
     expect(tooltip.x).toBeCloseToPixel(267);
@@ -410,7 +422,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.titleFont).toEqual(jasmine.objectContaining({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     }));
 
@@ -421,7 +433,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.footerFont).toEqual(jasmine.objectContaining({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     }));
 
@@ -460,10 +472,18 @@ describe('Plugin.Tooltip', function() {
       labelTextColors: ['labelTextColor', 'labelTextColor'],
       labelColors: [{
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }, {
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }],
       labelPointStyles: [{
         pointStyle: 'labelPointStyle',
@@ -573,10 +593,18 @@ describe('Plugin.Tooltip', function() {
       footer: [],
       labelColors: [{
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }, {
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }]
     }));
 
@@ -641,10 +669,18 @@ describe('Plugin.Tooltip', function() {
       footer: [],
       labelColors: [{
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }, {
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }]
     }));
 
@@ -710,10 +746,18 @@ describe('Plugin.Tooltip', function() {
       footer: [],
       labelColors: [{
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }, {
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }]
     }));
 
@@ -778,7 +822,11 @@ describe('Plugin.Tooltip', function() {
       footer: [],
       labelColors: [{
         borderColor: defaults.borderColor,
-        backgroundColor: defaults.backgroundColor
+        backgroundColor: defaults.backgroundColor,
+        borderWidth: 1,
+        borderDash: undefined,
+        borderDashOffset: undefined,
+        borderRadius: 0,
       }]
     }));
   });
@@ -1203,7 +1251,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.titleFont).toEqualOptions({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     });
 
@@ -1215,7 +1263,7 @@ describe('Plugin.Tooltip', function() {
 
     expect(tooltip.options.footerFont).toEqualOptions({
       family: defaults.font.family,
-      style: 'bold',
+      weight: 'bold',
       size: defaults.font.size,
     });
 
@@ -1293,7 +1341,7 @@ describe('Plugin.Tooltip', function() {
           // Title
           titleFont: {
             family: defaults.font.family,
-            style: 'bold',
+            weight: 'bold',
             size: defaults.font.size,
           },
           titleColor: '#fff',
@@ -1304,7 +1352,7 @@ describe('Plugin.Tooltip', function() {
           // Footer
           footerFont: {
             family: defaults.font.family,
-            style: 'bold',
+            weight: 'bold',
             size: defaults.font.size,
           },
           footerColor: '#fff',
@@ -1392,7 +1440,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['left']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['title', 105, 112.2]},
         {name: 'setTextAlign', args: ['left']},
         {name: 'setTextBaseline', args: ['middle']},
@@ -1403,7 +1451,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['left']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['footer', 105, 153]},
         {name: 'restore', args: []}
       ]));
@@ -1418,7 +1466,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['right']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['title', 195, 112.2]},
         {name: 'setTextAlign', args: ['right']},
         {name: 'setTextBaseline', args: ['middle']},
@@ -1429,7 +1477,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['right']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['footer', 195, 153]},
         {name: 'restore', args: []}
       ]));
@@ -1444,7 +1492,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['center']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['title', 150, 112.2]},
         {name: 'setTextAlign', args: ['center']},
         {name: 'setTextBaseline', args: ['middle']},
@@ -1455,7 +1503,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['center']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['footer', 150, 153]},
         {name: 'restore', args: []}
       ]));
@@ -1470,7 +1518,7 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['right']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['title', 195, 112.2]},
         {name: 'setTextAlign', args: ['center']},
         {name: 'setTextBaseline', args: ['middle']},
@@ -1481,15 +1529,15 @@ describe('Plugin.Tooltip', function() {
         {name: 'setTextAlign', args: ['left']},
         {name: 'setTextBaseline', args: ['middle']},
         {name: 'setFillStyle', args: ['#fff']},
-        {name: 'setFont', args: ["bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
+        {name: 'setFont', args: ["normal bold 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"]},
         {name: 'fillText', args: ['footer', 105, 153]},
         {name: 'restore', args: []}
       ]));
     });
   });
 
-  describe('active events', function() {
-    it('should set the active events', function() {
+  describe('active elements', function() {
+    it('should set the active elements', function() {
       var chart = window.acquireChart({
         type: 'line',
         data: {
@@ -1506,6 +1554,38 @@ describe('Plugin.Tooltip', function() {
       const meta = chart.getDatasetMeta(0);
       chart.tooltip.setActiveElements([{datasetIndex: 0, index: 0}], {x: 0, y: 0});
       expect(chart.tooltip.getActiveElements()[0].element).toBe(meta.data[0]);
+    });
+  });
+
+  describe('events', function() {
+    it('should not be called on events not in plugin events array', async function() {
+      var chart = window.acquireChart({
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Dataset 1',
+            data: [10, 20, 30],
+            pointHoverBorderColor: 'rgb(255, 0, 0)',
+            pointHoverBackgroundColor: 'rgb(0, 255, 0)'
+          }],
+          labels: ['Point 1', 'Point 2', 'Point 3']
+        },
+        options: {
+          plugins: {
+            tooltip: {
+              events: ['click']
+            }
+          }
+        }
+      });
+
+      const meta = chart.getDatasetMeta(0);
+      const point = meta.data[1];
+
+      await jasmine.triggerMouseEvent(chart, 'mousemove', point);
+      expect(chart.tooltip.opacity).toEqual(0);
+      await jasmine.triggerMouseEvent(chart, 'click', point);
+      expect(chart.tooltip.opacity).toEqual(1);
     });
   });
 });
