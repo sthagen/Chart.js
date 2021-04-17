@@ -3,7 +3,7 @@ import {_alignPixel, _measureText, renderText, clipArea, unclipArea} from '../he
 import {callback as call, each, finiteOrDefault, isArray, isFinite, isNullOrUndef, isObject} from '../helpers/helpers.core';
 import {toDegrees, toRadians, _int16Range, _limitValue, HALF_PI} from '../helpers/helpers.math';
 import {_alignStartEnd, _toLeftRightCenter} from '../helpers/helpers.extras';
-import {toFont, toPadding} from '../helpers/helpers.options';
+import {toFont, toPadding, _addGrace} from '../helpers/helpers.options';
 
 import './core.scale.defaults';
 
@@ -204,6 +204,7 @@ export default class Scale extends Element {
     this.labelRotation = undefined;
     this.min = undefined;
     this.max = undefined;
+    this._range = undefined;
     /** @type {Tick[]} */
     this.ticks = [];
     /** @type {object[]|null} */
@@ -401,6 +402,7 @@ export default class Scale extends Element {
       me.beforeDataLimits();
       me.determineDataLimits();
       me.afterDataLimits();
+      me._range = _addGrace(me, me.options.grace);
       me._dataLimitsCached = true;
     }
 
@@ -549,6 +551,14 @@ export default class Scale extends Element {
     for (i = 0, ilen = ticks.length; i < ilen; i++) {
       tick = ticks[i];
       tick.label = call(tickOpts.callback, [tick.value, i, ticks], me);
+    }
+    // Ticks should be skipped when callback returns null or undef, so lets remove those.
+    for (i = 0; i < ilen; i++) {
+      if (isNullOrUndef(ticks[i].label)) {
+        ticks.splice(i, 1);
+        ilen--;
+        i--;
+      }
     }
   }
   afterTickToLabelConversion() {
