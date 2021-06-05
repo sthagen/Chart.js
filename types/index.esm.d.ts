@@ -252,6 +252,13 @@ export interface DoughnutControllerDatasetOptions
    * @default 1
    */
   weight: number;
+
+  /**
+   * Similar to the `offset` option, but applies to all arcs. This can be used to to add spaces
+   * between arcs
+   * @default 0
+   */
+  spacing: number;
 }
 
 export interface DoughnutAnimationOptions {
@@ -293,6 +300,12 @@ export interface DoughnutControllerChartOptions {
    * @default 0
    */
   rotation: number;
+
+  /**
+   * Spacing between the arcs
+   * @default 0
+   */
+  spacing: number;
 
   animation: DoughnutAnimationOptions;
 }
@@ -742,7 +755,7 @@ export const layouts: {
   update(chart: Chart, width: number, height: number): void;
 };
 
-export interface Plugin<TType extends ChartType = ChartType, O = AnyObject> extends ExtendedPlugin<TType> {
+export interface Plugin<TType extends ChartType = ChartType, O = AnyObject> extends ExtendedPlugin<TType, O> {
   id: string;
 
   /**
@@ -1711,7 +1724,7 @@ export interface LineHoverOptions extends CommonHoverOptions {
 export interface LineElement<T extends LineProps = LineProps, O extends LineOptions = LineOptions>
   extends Element<T, O>,
     VisualElement {
-  updateControlPoints(chartArea: ChartArea): void;
+  updateControlPoints(chartArea: ChartArea, indexAxis?: 'x' | 'y'): void;
   points: Point[];
   readonly segments: Segment[];
   first(): Point | false;
@@ -1953,7 +1966,9 @@ export class BasePlatform {
 export class BasicPlatform extends BasePlatform {}
 export class DomPlatform extends BasePlatform {}
 
-export declare enum DecimationAlgorithm {
+export const Decimation: Plugin;
+
+export const enum DecimationAlgorithm {
   lttb = 'lttb',
   minmax = 'min-max',
 }
@@ -2106,6 +2121,14 @@ export interface LegendOptions {
    */
   align: 'start' | 'center' | 'end';
   /**
+   * Maximum height of the legend, in pixels
+   */
+  maxHeight: number;
+  /**
+   * Maximum width of the legend, in pixels
+   */
+  maxWidth: number;
+  /**
    * Marks that this box should take the full width/height of the canvas (moving other boxes). This is unlikely to need to be changed in day-to-day use.
    * @default true
    */
@@ -2185,6 +2208,15 @@ export interface LegendOptions {
      */
     usePointStyle: boolean;
   };
+  /**
+   * true for rendering the legends from right to left.
+   */
+  rtl: boolean;
+  /**
+   * This will force the text direction 'rtl' or 'ltr' on the canvas for rendering the legend, regardless of the css specified on the canvas
+   * @default canvas' default
+   */
+  textDirection: string;
 
   title: {
     /**
@@ -2830,6 +2862,12 @@ export interface CartesianScaleOptions extends CoreScaleOptions {
      * @default 'near'
      */
     crossAlign: 'near' | 'center' | 'far';
+
+    /**
+     * Should the defined `min` and `max` values be presented as ticks even if they are not "nice".
+     * @default: true
+     */
+    includeBounds: boolean;
 
     /**
      * Distance in pixels to offset the label from the centre point of the tick (in the x direction for the x axis, and the y direction for the y axis). Note: this can cause labels at the edges to be cropped by the edge of the canvas

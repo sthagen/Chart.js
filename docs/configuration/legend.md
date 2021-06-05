@@ -59,7 +59,7 @@ Namespace: `options.plugins.legend.labels`
 | `generateLabels` | `function` | | Generates legend items for each thing in the legend. Default implementation returns the text + styling for the color box. See [Legend Item](#legend-item-interface) for details.
 | `filter` | `function` | `null` | Filters legend items out of the legend. Receives 2 parameters, a [Legend Item](#legend-item-interface) and the chart data.
 | `sort` | `function` | `null` | Sorts legend items. Receives 3 parameters, two [Legend Items](#legend-item-interface) and the chart data.
-| `pointStyle` | | | If specified, this style of point is used for the legend. Only used if `usePointStyle` is true.
+| [`pointStyle`](elements.md#point-styles) | `string`\|`Image` | `'circle'` | If specified, this style of point is used for the legend. Only used if `usePointStyle` is true.
 | `textAlign` | `string` | `'center'` | Horizontal alignment of the label text. Options are: `'left'`, `'right'` or `'center'`.
 | `usePointStyle` | `boolean` | `false` | Label style will match corresponding point style (size is based on the minimum value between boxWidth and font.size).
 
@@ -171,12 +171,19 @@ Lets say we wanted instead to link the display of the first two datasets. We cou
 
 ```javascript
 var defaultLegendClickHandler = Chart.defaults.plugins.legend.onClick;
+var pieDoughnutLegendClickHandler = Chart.controllers.doughnut.overrides.plugins.legend.onClick;
 var newLegendClickHandler = function (e, legendItem, legend) {
     var index = legendItem.datasetIndex;
+    var type = legend.chart.config.type;
 
     if (index > 1) {
         // Do the original logic
-        defaultLegendClickHandler(e, legendItem);
+        if (type === 'pie' || type === 'doughnut') {
+            pieDoughnutLegendClickHandler(e, legendItem, legend)
+        } else {
+            defaultLegendClickHandler(e, legendItem, legend);
+        }
+
     } else {
         let ci = legend.chart;
         [
