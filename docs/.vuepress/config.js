@@ -29,6 +29,7 @@ module.exports = {
         {base: '/samples', alternative: ['bar/vertical']},
       ],
     }],
+    ['vuepress-plugin-code-copy', true],
     [
       'vuepress-plugin-typedoc',
       {
@@ -216,6 +217,11 @@ module.exports = {
           ]
         },
         {
+          title: 'Subtitle',
+          children: [
+            'subtitle/basic',
+          ]
+        },        {
           title: 'Tooltip',
           children: [
             'tooltip/position',
@@ -303,6 +309,7 @@ module.exports = {
             'configuration/layout',
             'configuration/legend',
             'configuration/title',
+            'configuration/subtitle',
             'configuration/tooltip',
             'configuration/elements',
             'configuration/decimation'

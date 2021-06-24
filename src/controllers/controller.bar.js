@@ -1,6 +1,6 @@
 import DatasetController from '../core/core.datasetController';
 import {
-  clipArea, unclipArea, _arrayUnique, isArray, isNullOrUndef,
+  _arrayUnique, isArray, isNullOrUndef,
   valueOrDefault, resolveObjectKey, sign, defined
 } from '../helpers';
 
@@ -225,6 +225,14 @@ export default class BarController extends DatasetController {
   }
 
   /**
+	 * @return {number|boolean}
+	 * @protected
+	 */
+  getMaxOverflow() {
+    return 0;
+  }
+
+  /**
 	 * @protected
 	 */
   getLabelAndValue(index) {
@@ -290,7 +298,7 @@ export default class BarController extends DatasetController {
       };
 
       if (includeOptions) {
-        properties.options = sharedOptions || me.resolveDataElementOptions(i, mode);
+        properties.options = sharedOptions || me.resolveDataElementOptions(i, bars[i].active ? 'active' : mode);
       }
       me.updateElement(bars[i], i, properties, mode);
     }
@@ -315,6 +323,10 @@ export default class BarController extends DatasetController {
 
     for (i = 0; i < ilen; ++i) {
       item = metasets[i];
+
+      if (!item.controller.options.grouped) {
+        continue;
+      }
 
       if (typeof dataIndex !== 'undefined') {
         const val = item.controller.getParsed(dataIndex)[
@@ -514,22 +526,17 @@ export default class BarController extends DatasetController {
 
   draw() {
     const me = this;
-    const chart = me.chart;
     const meta = me._cachedMeta;
     const vScale = meta.vScale;
     const rects = meta.data;
     const ilen = rects.length;
     let i = 0;
 
-    clipArea(chart.ctx, chart.chartArea);
-
     for (; i < ilen; ++i) {
       if (me.getParsed(i)[vScale.axis] !== null) {
         rects[i].draw(me._ctx);
       }
     }
-
-    unclipArea(chart.ctx);
   }
 
 }
