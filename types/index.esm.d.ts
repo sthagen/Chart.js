@@ -1436,7 +1436,20 @@ export interface CoreChartOptions<TType extends ChartType> extends ParsingOption
    * The events option defines the browser events that the chart should listen to for tooltips and hovering.
    * @default ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove']
    */
-  events: ('mousemove' | 'mouseout' | 'click' | 'touchstart' | 'touchmove')[];
+  events: (
+    'mousemove' |
+    'mouseout' |
+    'click' |
+    'touchstart' |
+    'touchmove' |
+    'touchend' |
+    'pointerenter' |
+    'pointerdown' |
+    'pointermove' |
+    'pointerup' |
+    'pointerleave' |
+    'pointerout'
+  )[];
 
   /**
    * Called when any of the events fire. Passed the event, an array of active elements (bars, points, etc), and the chart.
@@ -1978,6 +1991,7 @@ export const enum DecimationAlgorithm {
 }
 interface BaseDecimationOptions {
   enabled: boolean;
+  threshold?: number;
 }
 
 interface LttbDecimationOptions extends BaseDecimationOptions {
@@ -1997,7 +2011,7 @@ export interface FillerOptions {
   propagate: boolean;
 }
 
-export type FillTarget = number | string | { value: number } | 'start' | 'end' | 'origin' | 'stack' | boolean;
+export type FillTarget = number | string | { value: number } | 'start' | 'end' | 'origin' | 'stack' | 'shape' | boolean;
 
 export interface ComplexFillTarget {
   /**
@@ -3025,7 +3039,7 @@ export type TimeScaleOptions = CartesianScaleOptions & {
      * If `number`, the index of the first day of the week (0 - Sunday, 6 - Saturday).
      * @default false
      */
-    isoWeekday: false | number;
+    isoWeekday: boolean | number;
     /**
      * Sets how different time units are displayed.
      */

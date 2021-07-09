@@ -15,7 +15,7 @@ describe('Plugin.decimation', function() {
       {x: 8, y: 8},
       {x: 9, y: 9}];
 
-    it('should draw all element if sample is greater than data', function() {
+    it('should draw all element if sample is greater than data based on canvas width', function() {
       var chart = window.acquireChart({
         type: 'line',
         data: {
@@ -54,7 +54,7 @@ describe('Plugin.decimation', function() {
       expect(chart.data.datasets[0].data.length).toBe(10);
     });
 
-    it('should draw the specified number of elements', function() {
+    it('should draw the specified number of elements based on canvas width', function() {
       var chart = window.acquireChart({
         type: 'line',
         data: {
@@ -92,6 +92,45 @@ describe('Plugin.decimation', function() {
       });
 
       expect(chart.data.datasets[0].data.length).toBe(7);
+    });
+
+    it('should draw the specified number of elements based on threshold', function() {
+      var chart = window.acquireChart({
+        type: 'line',
+        data: {
+          datasets: [{
+            data: originalData,
+            label: 'dataset1'
+          }]
+        },
+        options: {
+          parsing: false,
+          scales: {
+            x: {
+              type: 'linear'
+            }
+          },
+          plugins: {
+            decimation: {
+              enabled: true,
+              algorithm: 'lttb',
+              samples: 5,
+              threshold: 7
+            }
+          }
+        }
+      }, {
+        canvas: {
+          height: 100,
+          width: 100
+        },
+        wrapper: {
+          height: 100,
+          width: 100
+        }
+      });
+
+      expect(chart.data.datasets[0].data.length).toBe(5);
     });
 
     it('should draw all element only in range', function() {
@@ -139,6 +178,42 @@ describe('Plugin.decimation', function() {
       expect(chart.data.datasets[0].data[2].x).toBe(originalData[4].x);
       expect(chart.data.datasets[0].data[3].x).toBe(originalData[5].x);
       expect(chart.data.datasets[0].data[4].x).toBe(originalData[6].x);
+    });
+
+    it('should not crash with uneven points', function() {
+      const data = [];
+      for (let i = 0; i < 15552; i++) {
+        data.push({x: i, y: i});
+      }
+
+      function createChart() {
+        return window.acquireChart({
+          type: 'line',
+          data: {
+            datasets: [{
+              data
+            }]
+          },
+          options: {
+            devicePixelRatio: 1.25,
+            parsing: false,
+            scales: {
+              x: {
+                type: 'linear'
+              }
+            },
+            plugins: {
+              decimation: {
+                enabled: true,
+                algorithm: 'lttb'
+              }
+            }
+          }
+        }, {
+          canvas: {width: 511, height: 511},
+        });
+      }
+      expect(createChart).not.toThrow();
     });
   });
 });
