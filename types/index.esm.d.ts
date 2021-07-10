@@ -1156,7 +1156,7 @@ export interface CoreScaleOptions {
   afterUpdate(axis: Scale): void;
 }
 
-export interface Scale<O extends CoreScaleOptions = CoreScaleOptions> extends Element<{}, O>, LayoutItem {
+export interface Scale<O extends CoreScaleOptions = CoreScaleOptions> extends Element<unknown, O>, LayoutItem {
   readonly id: string;
   readonly type: string;
   readonly ctx: CanvasRenderingContext2D;
@@ -1277,6 +1277,14 @@ export interface ScriptableScaleContext {
   index: number;
   tick: Tick;
 }
+
+export interface ScriptableScalePointLabelContext {
+  chart: Chart;
+  scale: Scale;
+  index: number;
+  label: string;
+}
+
 
 export const Ticks: {
   formatters: {
@@ -1672,7 +1680,9 @@ export const ArcElement: ChartComponent & {
   new (cfg: AnyObject): ArcElement;
 };
 
-export interface LineProps {}
+export interface LineProps {
+  points: Point[]
+}
 
 export interface LineOptions extends CommonElementOptions {
   /**
@@ -2120,9 +2130,14 @@ export interface LegendItem {
   textAlign?: TextAlign;
 }
 
-export interface LegendElement extends Element, LayoutItem {}
+export interface LegendElement<TType extends ChartType> extends Element<AnyObject, LegendOptions<TType>>, LayoutItem {
+  chart: Chart<TType>;
+  ctx: CanvasRenderingContext2D;
+  legendItems?: LegendItem[];
+  options: LegendOptions<TType>;
+}
 
-export interface LegendOptions {
+export interface LegendOptions<TType extends ChartType> {
   /**
    * Is the legend shown?
    * @default true
@@ -2159,15 +2174,15 @@ export interface LegendOptions {
   /**
    * A callback that is called when a click event is registered on a label item.
    */
-  onClick(this: LegendElement, e: ChartEvent, legendItem: LegendItem, legend: LegendElement): void;
+  onClick(this: LegendElement<TType>, e: ChartEvent, legendItem: LegendItem, legend: LegendElement<TType>): void;
   /**
    * A callback that is called when a 'mousemove' event is registered on top of a label item
    */
-  onHover(this: LegendElement, e: ChartEvent, legendItem: LegendItem, legend: LegendElement): void;
+  onHover(this: LegendElement<TType>, e: ChartEvent, legendItem: LegendItem, legend: LegendElement<TType>): void;
   /**
    * A callback that is called when a 'mousemove' event is registered outside of a previously hovered label item.
    */
-  onLeave(this: LegendElement, e: ChartEvent, legendItem: LegendItem, legend: LegendElement): void;
+  onLeave(this: LegendElement<TType>, e: ChartEvent, legendItem: LegendItem, legend: LegendElement<TType>): void;
 
   labels: {
     /**
@@ -2445,7 +2460,7 @@ export interface ScriptableTooltipContext<TType extends ChartType> {
   tooltipItems: TooltipItem<TType>[];
 }
 
-export interface TooltipOptions<TType extends ChartType> extends CoreInteractionOptions {
+export interface TooltipOptions<TType extends ChartType = ChartType> extends CoreInteractionOptions {
   /**
    * Are on-canvas tooltips enabled?
    * @default true
@@ -2469,9 +2484,9 @@ export interface TooltipOptions<TType extends ChartType> extends CoreInteraction
   /**
    * Sort tooltip items.
    */
-  itemSort: (a: TooltipItem<ChartType>, b: TooltipItem<ChartType>, data: ChartData) => number;
+  itemSort: (a: TooltipItem<TType>, b: TooltipItem<TType>, data: ChartData) => number;
 
-  filter: (e: TooltipItem<ChartType>, index: number, array: TooltipItem<ChartType>[], data: ChartData) => boolean;
+  filter: (e: TooltipItem<TType>, index: number, array: TooltipItem<TType>[], data: ChartData) => boolean;
 
   /**
    * Background color of the tooltip.
@@ -2648,7 +2663,7 @@ export interface TooltipItem<TType extends ChartType> {
   /**
    * The dataset the item comes from
    */
-  dataset: ChartDataset;
+  dataset: UnionToIntersection<ChartDataset<TType>>;
 
   /**
    * Index of the dataset the item comes from
@@ -2669,7 +2684,7 @@ export interface TooltipItem<TType extends ChartType> {
 export interface PluginOptionsByType<TType extends ChartType> {
   decimation: DecimationOptions;
   filler: FillerOptions;
-  legend: LegendOptions;
+  legend: LegendOptions<TType>;
   title: TitleOptions;
   tooltip: TooltipOptions<TType>;
 }
@@ -3152,12 +3167,12 @@ export type RadialLinearScaleOptions = CoreScaleOptions & {
      * Background color of the point label.
      * @default undefined
      */
-    backdropColor: Scriptable<Color, ScriptableScaleContext>;
+    backdropColor: Scriptable<Color, ScriptableScalePointLabelContext>;
     /**
      * Padding of label backdrop.
      * @default 2
      */
-    backdropPadding: Scriptable<number | ChartArea, ScriptableScaleContext>;
+    backdropPadding: Scriptable<number | ChartArea, ScriptableScalePointLabelContext>;
 
     /**
      * if true, point labels are shown.
@@ -3168,10 +3183,10 @@ export type RadialLinearScaleOptions = CoreScaleOptions & {
      * Color of label
      * @see Defaults.color
      */
-    color: Scriptable<Color, ScriptableScaleContext>;
+    color: Scriptable<Color, ScriptableScalePointLabelContext>;
     /**
      */
-    font: Scriptable<FontSpec, ScriptableScaleContext>;
+    font: Scriptable<FontSpec, ScriptableScalePointLabelContext>;
 
     /**
      * Callback function to transform data labels to point labels. The default implementation simply returns the current string.
